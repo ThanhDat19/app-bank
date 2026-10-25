@@ -1,0 +1,13 @@
+.idea/
+*.iml
+.vscode/
+target/
+.env
+.env.*
+!.env.example
+.tools/
+.m2-local/
+*.log
+*.pid
+hs_err_pid*
+.DS_Store
