@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterErrors;
@@ -95,19 +97,34 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 "INTERNAL_ERROR", detail("INTERNAL_ERROR"), List.of());
     }
 
+    @ExceptionHandler(AuthenticationException.class)
+    ResponseEntity<Object> handleAuthentication(AuthenticationException exception, WebRequest request) {
+        var headers = new HttpHeaders();
+        headers.set(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
+        return response(request, headers, ApiProblem.unauthenticated(correlationId(request)));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<Object> handleAccessDenied(AccessDeniedException exception, WebRequest request) {
+        return response(request, HttpHeaders.EMPTY, ApiProblem.forbidden(correlationId(request)));
+    }
+
     private ResponseEntity<Object> response(WebRequest request, HttpHeaders original,
             HttpStatusCode status, String code, String detail, List<FieldViolation> errors) {
+        return response(request, original, new ApiProblem(status, code, detail, correlationId(request), errors));
+    }
+
+    private ResponseEntity<Object> response(WebRequest request, HttpHeaders original, ApiProblem problem) {
         if (request instanceof ServletWebRequest servlet && servlet.getResponse() != null
                 && servlet.getResponse().isCommitted()) {
             return null;
         }
-        String id = correlationId(request);
         HttpHeaders headers = new HttpHeaders();
         headers.putAll(original);
         headers.setContentType(MediaType.APPLICATION_PROBLEM_JSON);
-        headers.set(CorrelationIdFilter.HEADER, id);
+        headers.set(CorrelationIdFilter.HEADER, problem.getCorrelationId());
         headers.setCacheControl("no-store");
-        return new ResponseEntity<>(new ApiProblem(status, code, detail, id, errors), headers, status);
+        return new ResponseEntity<>(problem, headers, HttpStatusCode.valueOf(problem.getStatus()));
     }
 
     private static String correlationId(WebRequest request) {

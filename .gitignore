@@ -9,5 +9,7 @@ target/
 .m2-local/
 *.log
 *.pid
+__pycache__/
+*.pyc
 hs_err_pid*
 .DS_Store

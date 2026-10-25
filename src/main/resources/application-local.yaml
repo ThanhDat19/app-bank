@@ -3,3 +3,12 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+    oauth:
+      client-id: bank-swagger
+      use-pkce-with-authorization-code-grant: true
+
+bank:
+  iam:
+    issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/bank-lab}
+    jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/realms/bank-lab/protocol/openid-connect/certs}
+    audience: ${OIDC_AUDIENCE:bank-api}
