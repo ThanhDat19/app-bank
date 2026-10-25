@@ -73,7 +73,8 @@ Linux/macOS dùng `./mvnw`, tự export `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, 
 ```
 
 Đây là metadata, không xác nhận sẵn sàng giao dịch. Health mới kiểm tra database.
-Flyway V1 tạo schema `banking`; bảng nghiệp vụ sẽ có migrations riêng theo từng PR.
+Flyway V1 tạo schema `banking`; V2 của BL-004 thêm `banking.customers` và `banking.kyc_decisions`.
+Xem [hướng dẫn Customer/KYC](local-customer-kyc.md) để tạo dữ liệu qua API, không insert thủ công.
 Hibernate chỉ `validate`, không tạo/sửa schema tự động. Không có dữ liệu tiền hoặc số dư khởi tạo.
 
 ## BL-002: Theo dõi lỗi khi thử API

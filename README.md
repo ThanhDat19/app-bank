@@ -46,10 +46,13 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 - [BL-003: API và quy tắc IAM](docs/api/iam.md)
 - [ADR-003: Ranh giới identity và dữ liệu ngân hàng](docs/architecture/ADR-003-identity-boundary.md)
 - [BL-003: Bằng chứng kiểm thử và phiếu review](docs/reviews/BL-003.md)
+- [BL-004: Đặc tả Customer/KYC, ownership và concurrency](docs/api/customer-kyc.md)
+- [BL-004: Thử luồng Customer → Operator trên Swagger](docs/development/local-customer-kyc.md)
+- [BL-004: Bằng chứng kiểm thử và phiếu review](docs/reviews/BL-004.md)
 
 BL-001 cung cấp nền tảng; BL-002 bổ sung hợp đồng lỗi, correlation và kiểm tra ranh giới module.
-BL-003 bổ sung xác thực qua Keycloak và actor context. Core DB chưa có bảng nghiệp vụ; đăng nhập dùng
-user trong Keycloak, `/iam/me` đọc JWT đã xác minh. Xem hướng dẫn IAM trước khi thử Swagger.
-Customer, Account, Ledger và Transfer
-được triển khai trong các PR tiếp theo sau review. Chỉ dùng dữ liệu tổng hợp; dự án chưa có chứng nhận
+BL-003 bổ sung xác thực qua Keycloak và actor context; `/iam/me` đọc JWT đã xác minh.
+BL-004 thêm hai bảng Customer/KYC qua Flyway V2. CUSTOMER tự tạo/xem hồ sơ; OPERATOR khác identity
+quyết định KYC mô phỏng. Xem hướng dẫn Customer/KYC để thử bằng hai user trên Swagger.
+Account, Ledger và Transfer được triển khai trong các PR tiếp theo sau review. Chỉ dùng dữ liệu tổng hợp; dự án chưa có chứng nhận
 nghiệp vụ, an ninh hay vận hành cho ngân hàng thực tế.
