@@ -6,8 +6,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import vn.banklab.core.shared.web.ApiErrorResponses;
 
 @RestController
+@ApiErrorResponses
 @RequestMapping("/api/v1/system")
 @Tag(name = "System", description = "Non-sensitive simulation metadata")
 public class SystemController {

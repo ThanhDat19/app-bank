@@ -17,6 +17,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -74,11 +75,45 @@ class BootstrapIT {
         var docs = get("/v3/api-docs");
         assertThat(docs.statusCode()).isEqualTo(200);
         assertThat(docs.body()).contains("/api/v1/system/info", "getSystemInfo", "SystemInfoResponse");
+        var document = JsonMapper.builder().build().readTree(docs.body());
+        var operation = document.path("paths").path("/api/v1/system/info").path("get");
+        assertThat(operation.path("responses").path("default").path("content")
+                .path("application/problem+json").path("schema").path("$ref").asString())
+                .isEqualTo("#/components/schemas/ApiProblem");
+        assertThat(operation.path("responses").path("200").path("headers").has("X-Correlation-ID")).isTrue();
+        assertThat(operation.path("parameters").toString()).contains("X-Correlation-ID");
+        for (var parameter : operation.path("parameters")) {
+            if (parameter.path("name").asString().equals("X-Correlation-ID")) {
+                var pattern = java.util.regex.Pattern.compile(parameter.path("schema").path("pattern").asString());
+                // JSON Schema pattern performs a search, unlike Java Matcher.matches().
+                assertThat(pattern.matcher("review-002.A_1").find()).isTrue();
+                assertThat(pattern.matcher("contains space").find()).isFalse();
+            }
+        }
+        assertThat(document.path("components").path("schemas").path("ApiProblem").path("properties")
+                .has("correlationId")).isTrue();
         assertThat(get("/v3/api-docs.yaml").statusCode()).isEqualTo(200);
         var ui = get("/swagger-ui.html");
         assertThat(ui.statusCode()).isEqualTo(200);
         assertThat(ui.body()).contains("swagger-ui");
         assertThat(get("/swagger-ui/swagger-ui-bundle.js").statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    void errorContractMatchesCorrelationHeaderOverRealHttp() throws Exception {
+        var response = client.send(HttpRequest.newBuilder(URI.create(
+                "http://127.0.0.1:" + port + "/api/v1/missing?token=do-not-expose"))
+                .header("X-Correlation-ID", "integration-002").GET().build(), HttpResponse.BodyHandlers.ofString());
+        assertThat(response.statusCode()).isEqualTo(404);
+        assertThat(response.headers().firstValue("Content-Type").orElseThrow()).contains("application/problem+json");
+        assertThat(response.headers().firstValue("X-Correlation-ID")).contains("integration-002");
+        var problem = JsonMapper.builder().build().readTree(response.body());
+        assertThat(problem.path("code").asString()).isEqualTo("RESOURCE_NOT_FOUND");
+        assertThat(problem.path("correlationId").asString()).isEqualTo("integration-002");
+        assertThat(problem.path("status").asInt()).isEqualTo(404);
+        assertThat(response.body()).doesNotContain("do-not-expose");
+        assertThat(get("/api/v1/system/info").headers().firstValue("X-Correlation-ID").orElseThrow())
+                .isNotEqualTo("integration-002");
     }
 
     private HttpResponse<String> get(String path) throws Exception {
