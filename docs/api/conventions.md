@@ -45,6 +45,8 @@ Thông điệp công khai hiện dùng tiếng Anh; UI tự ánh xạ code sang 
 | --- | --- | --- |
 | 400 | INVALID_REQUEST | JSON hỏng, thiếu tham số, sai kiểu tham số |
 | 400 | VALIDATION_FAILED | Request DTO không qua Bean Validation |
+| 401 | UNAUTHENTICATED | BL-003: thiếu/sai bearer access token; thêm WWW-Authenticate: Bearer |
+| 403 | ACCESS_DENIED | BL-003: đã xác thực nhưng thiếu quyền |
 | 404 | RESOURCE_NOT_FOUND | Không có route/resource |
 | 405 | METHOD_NOT_ALLOWED | Sai HTTP method; giữ header Allow |
 | 406 | NOT_ACCEPTABLE | Không hỗ trợ response media type yêu cầu |
@@ -83,8 +85,9 @@ schema `ApiProblem`, response headers và default error response thay vì chỉ 
 ## Phạm vi còn lại
 
 Advice xử lý exceptions đi qua Spring MVC khi response còn ghi được. Không tuyên bố có thể chuẩn hóa lỗi
-trước servlet/filter chain, lỗi TLS/proxy, security entrypoint hoặc response đã committed. BL-003 phải tích hợp
-401/403 với cùng contract bằng security handlers; không biến lỗi security thành 500 qua catch-all.
+trước servlet/filter chain, lỗi TLS/proxy hoặc response đã committed. BL-003 đã tích hợp security
+entrypoint/access-denied handler và method-security exceptions với cùng contract 401/403;
+xem [đặc tả IAM](iam.md). Lỗi của servlet container trước filter chain vẫn ngoài phạm vi.
 Log lỗi bất ngờ hiện chỉ chứa loại exception và correlation ID, không chứa exception message/payload.
 Khi bổ sung observability phải có redaction và propagation riêng, không tự thêm dữ liệu khách hàng vào log.
 

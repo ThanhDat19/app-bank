@@ -18,7 +18,7 @@ Sau đó:
 
 ```powershell
 . .\scripts\Use-LocalEnvironment.ps1
-docker compose up -d --wait postgres
+docker compose --profile iam up -d --wait postgres keycloak
 .\mvnw.cmd -B -ntp clean verify
 .\mvnw.cmd spring-boot:run
 ```
@@ -26,6 +26,9 @@ docker compose up -d --wait postgres
 Dot-source bằng dấu chấm đầu dòng để giữ biến trong phiên PowerShell đang dùng.
 Docker Compose đọc `.env`; Spring Boot không tự đọc `.env`, nên cần script ánh xạ sang `DB_*`.
 Không đặt mật khẩu vào tham số dòng lệnh hoặc commit run configuration có secret.
+
+BL-003 thêm `KEYCLOAK_ADMIN_PASSWORD` trong `.env`. Xem [đăng nhập local](local-iam.md) để tạo user,
+gán CUSTOMER/OPERATOR và Authorize trong Swagger. Schema core chưa có bảng nghiệp vụ không cản `/iam/me`.
 
 Ứng dụng và PostgreSQL chỉ bind loopback. Swagger bật ở `local`, mặc định tắt ở profile khác.
 Health chỉ trả trạng thái, không lộ thông tin datasource. Địa chỉ mặc định là cổng 8080 và DB 5432.
@@ -83,5 +86,7 @@ và log MDC. Mọi request không gửi ID sẽ được cấp UUID; ID này kh�
 curl.exe -i -H "X-Correlation-ID: review-local-002" http://localhost:8080/api/v1/unknown
 ```
 
-Kỳ vọng HTTP 404, `application/problem+json`, `code=RESOURCE_NOT_FOUND`, cùng correlation ID trong
-header và body. Xem [hợp đồng đầy đủ](../api/conventions.md).
+Từ BL-003, request trên không có token trả HTTP 401 `UNAUTHENTICATED`. Sau khi đăng nhập Swagger,
+gọi route API không tồn tại bằng token hợp lệ có CUSTOMER/OPERATOR thì nhận 404 `RESOURCE_NOT_FOUND`.
+Cả hai dùng `application/problem+json` và correlation header/body trùng nhau.
+Xem [hợp đồng đầy đủ](../api/conventions.md) và [IAM](../api/iam.md).
