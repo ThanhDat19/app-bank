@@ -39,3 +39,7 @@ springdoc:
     enabled: ${API_DOCS_ENABLED:false}
     path: /swagger-ui.html
   paths-to-match: /api/v1/**
+
+logging:
+  pattern:
+    level: "%5p [correlationId=%X{correlationId:-}]"
