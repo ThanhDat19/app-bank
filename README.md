@@ -36,7 +36,11 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 - [Kế hoạch 20 sprint, tác vụ và phân công](docs/project/roadmap.md)
 - [Git workflow và Definition of Done](docs/project/delivery-workflow.md)
 - [BL-001: Phạm vi và phiếu review](docs/reviews/BL-001.md)
+- [Tài liệu bootstrap gốc owner đính kèm](docs/reference/README.md)
+- [BL-002: REST errors và correlation](docs/api/conventions.md)
+- [Quy tắc module được kiểm tra bằng ArchUnit](docs/architecture/module-boundaries.md)
+- [BL-002: Kết quả kiểm chứng và phiếu review](docs/reviews/BL-002.md)
 
-BL-001 chỉ cung cấp nền tảng, system endpoint và tài liệu. Customer, Account, Ledger và Transfer
+BL-001 cung cấp nền tảng; BL-002 bổ sung hợp đồng lỗi, correlation và kiểm tra ranh giới module. Customer, Account, Ledger và Transfer
 được triển khai trong các PR tiếp theo sau review. Chỉ dùng dữ liệu tổng hợp; dự án chưa có chứng nhận
 nghiệp vụ, an ninh hay vận hành cho ngân hàng thực tế.

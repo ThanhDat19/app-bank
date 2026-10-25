@@ -72,3 +72,16 @@ Linux/macOS dùng `./mvnw`, tự export `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, 
 Đây là metadata, không xác nhận sẵn sàng giao dịch. Health mới kiểm tra database.
 Flyway V1 tạo schema `banking`; bảng nghiệp vụ sẽ có migrations riêng theo từng PR.
 Hibernate chỉ `validate`, không tạo/sửa schema tự động. Không có dữ liệu tiền hoặc số dư khởi tạo.
+
+## BL-002: Theo dõi lỗi khi thử API
+
+Swagger có optional header `X-Correlation-ID`. Có thể nhập `review-local-002` để đối chiếu response header
+và log MDC. Mọi request không gửi ID sẽ được cấp UUID; ID này không thay idempotency key.
+Để xem Problem Details mà không cần API demo, gọi một route không tồn tại:
+
+```powershell
+curl.exe -i -H "X-Correlation-ID: review-local-002" http://localhost:8080/api/v1/unknown
+```
+
+Kỳ vọng HTTP 404, `application/problem+json`, `code=RESOURCE_NOT_FOUND`, cùng correlation ID trong
+header và body. Xem [hợp đồng đầy đủ](../api/conventions.md).
