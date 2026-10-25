@@ -82,6 +82,14 @@ class BootstrapIT {
                 .isEqualTo("#/components/schemas/ApiProblem");
         assertThat(operation.path("responses").path("200").path("headers").has("X-Correlation-ID")).isTrue();
         assertThat(operation.path("parameters").toString()).contains("X-Correlation-ID");
+        for (var parameter : operation.path("parameters")) {
+            if (parameter.path("name").asString().equals("X-Correlation-ID")) {
+                var pattern = java.util.regex.Pattern.compile(parameter.path("schema").path("pattern").asString());
+                // JSON Schema pattern performs a search, unlike Java Matcher.matches().
+                assertThat(pattern.matcher("review-002.A_1").find()).isTrue();
+                assertThat(pattern.matcher("contains space").find()).isFalse();
+            }
+        }
         assertThat(document.path("components").path("schemas").path("ApiProblem").path("properties")
                 .has("correlationId")).isTrue();
         assertThat(get("/v3/api-docs.yaml").statusCode()).isEqualTo(200);
