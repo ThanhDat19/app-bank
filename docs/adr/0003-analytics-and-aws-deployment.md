@@ -1,6 +1,6 @@
 # ADR-003 (Proposed): Banking Analytics and Cloud Deployment
 
-**Status:** Proposed — owner review required.  
+**Status:** Proposed — owner review required.\n\n**Course-parity correction (2026-10-25):** The reference infrastructure is written in **AWS CDK for Java**, which synthesizes CloudFormation templates deployed to **LocalStack**. This is not Terraform and is not evidence of a verified live AWS deployment. The reference analytics consumer is a logging stub, not a complete analytics pipeline. See [the audit](../audit/reference-parity-and-banking-gaps.md).  
 **System:** Bank Platform simulation (synthetic data only).  
 **Reference:** Chris Blakely's Java/Spring Microservices tutorial, specifically analytics consumer and LocalStack deployment.
 
@@ -58,7 +58,7 @@ Duplicate event -> one aggregate update; out-of-order and malformed events; repl
 ## 5. Review decisions required
 1. Keep analytics asynchronous, strictly read-only toward the ledger?
 2. Approve Docker Compose profiles and Dockerized services?
-3. Choose CloudFormation (closer to video) or Terraform for IaC?
+3. Approve AWS CDK Java as the default IaC (course parity), or request a separate ADR for Terraform?
 4. Choose AWS ECS Fargate or low-cost EC2 sandbox after price comparison?
 5. Approve cloud budget and manual deploy gate?
 
