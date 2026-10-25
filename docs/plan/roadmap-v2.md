@@ -1,68 +1,51 @@
-# Bank Platform — Delivery Roadmap v2 (proposal)
+# Bank Platform — Roadmap Cloud/Analytics Addendum (draft for review)
 
-> Training/portfolio simulation only. Not a licensed bank or production-ready financial system.
-> This document supersedes the earlier 20-sprint proposal for planning; no implementation is considered accepted until CI and human review pass.
+**Status:** Draft; **does not supersede** [the authoritative roadmap](../../docs/project/roadmap.md).  
+**Last audited:** 2026-10-25.  
+**Scope:** Add the platform/cloud elements observed in the reference course without reordering already approved banking delivery.
 
-## Delivery model
-- **Cadence:** 1 week per sprint, approximately 10–15 hours/week; 2–3 focused work sessions, adjustable by reviewer.
-- **Governance:** GitHub Issue -> feature branch -> small commits -> automated tests -> Swagger/OpenAPI -> Draft PR -> owner review -> merge.
-- **Owner:** human reviewer approves requirements, cloud spending, secrets, release and merge. AI can author code, tests, docs, migrations, IaC and propose PRs.
-- **Release gates:** no core transfer before balanced ledger + simulated funding; no event analytics before transactional outbox; no paid cloud resources before explicit cost/security approval.
-- **Cloud distinction:** LocalStack emulates some AWS APIs; passing LocalStack tests is NOT proof of successful AWS deployment.
+## Why this addendum exists
 
-## Sprint plan
+An earlier draft claimed Analytics and AWS were the only missing pieces and re-numbered the first sprints. Both claims were incorrect:
+- The course also demonstrates separate Dockerfiles, gateway, JWT auth, gRPC, Kafka/Protobuf, integration tests, Java AWS CDK synthesizing CloudFormation, LocalStack, VPC, ECS/Fargate, RDS, MSK, ALB, CloudWatch log groups and related networking.
+- The main project has **already merged BL-001, BL-002 and BL-003**, while **BL-004 has an open PR**. Replacing S01 with Docker and S02 with Customer would contradict the approved project history.
+- The reference Analytics consumer only logs Kafka messages; it does not implement a real analytics read model.
+- The reference repository contains Dockerfiles but no root Docker Compose manifest; its README mentions Notification Service, but no notification-service directory is present in the verified tree.
+- Cloud deployment in the tutorial uses AWS CDK Java -> synthesized CloudFormation -> LocalStack. This is not evidence of a tested production AWS deployment.
 
-| Sprint | Main scope | Acceptance gate |
+See [the audit matrix](../audit/reference-parity-and-banking-gaps.md) before merging.
+
+## Preserve existing core roadmap and delivery order
+
+The authoritative [20-sprint plan](../../docs/project/roadmap.md) retains its BL-001..BL-023 IDs, gates and business priorities. Existing statuses must be read from GitHub Issues/PRs, not inferred from calendar dates.
+
+| Existing milestone | Core work | Additional platform work (separate issues) |
 |---|---|---|
-| S00 | BL-001 Bootstrap: Java 21, Spring Boot, PostgreSQL, Flyway, Swagger, CI | App starts; docs and tests pass |
-| S01 | BL-040 Dockerize app, multi-stage image, Compose, health checks; API errors | `docker compose up --build`, Swagger, restart persistence |
-| S02 | Customer onboarding with synthetic KYC, validations | Ownership, validation and negative tests |
-| S03 | Account lifecycle, product/account states | Valid transitions, role isolation |
-| S04 | Chart of accounts and immutable double-entry ledger | Per-currency journal balanced; append-only |
-| S05 | Simulated cash-in and funding source | All money created via controlled offsetting journal |
-| S06 | Internal transfer v1 | Atomic debit and credit in one DB transaction |
-| S07 | Idempotency, locking, concurrent spending and retry | No double posting / overdraft on concurrent requests |
-| S08 | Holds, available balance, limits and fees | Invariants and boundary tests |
-| S09 | Keycloak/OIDC, JWT, RBAC and ownership | 401/403, token validation, security tests |
-| S10 | Transactional outbox, relay and Kafka bootstrap | Crash/retry consistency, idempotent consumers |
-| S11 | BL-041 Banking Analytics Service + Notification Service, Docker | Event dedup, aggregate correctness, Kafka replay |
-| S12 | Reconciliation and audit | Injected imbalance and missing event detected |
-| S13 | Transaction history, statements, export | Pagination, access control, amount reconciliation |
-| S14 | Risk service over gRPC Unary | Deadline, deny/allow, fail-closed policy |
-| S15 | Simulated external payment with state machine | UNKNOWN/retry/reversal/recovery flows |
-| S16 | Operator workflows and maker-checker | Two distinct approvals, audit trail |
-| S17 | Observability: Prometheus/Grafana/OpenTelemetry, performance baseline | Metrics, traces, load tests, runbooks |
-| S18 | Reliability, chaos/fault injection, backup/restore | RPO/RTO simulation evidence |
-| S19 | BL-042 IaC + LocalStack AWS simulation | Validated infrastructure and cleanup; limitations documented |
-| S20 | BL-043 Optional real AWS sandbox deployment | Human cost approval, private DB, TLS, ECR/ECS or EC2, smoke test |
-| S21 | AWS CI/CD hardening, deployment rollback, security and cost review | Manual deployment approval and teardown test |
-| S22 | Portfolio v1.0 release, architecture walkthrough, demo and interviews | Approved end-to-end demo and documentation |
+| BL-001..BL-003 | Bootstrap, API conventions, Keycloak OIDC/RBAC — merged | Do not re-plan or redo completed work |
+| BL-004 onward | Customer/KYC, account, ledger, cash-in, transfer, idempotency, reversal | **#9 / BL-040:** Docker image and Compose enhancements can be reviewed independently, after ensuring compatibility with current Compose |
+| BL-012 / Outbox; BL-013 / Kafka | Reliable committed financial events, notification | **#10 / BL-041:** Analytics Service follows Outbox/Kafka and needs its own DB, replay/dedupe tests, API and Dockerfile |
+| BL-014..BL-023 | Reconciliation, statements, risk, external simulation, operations, metrics, recovery, portfolio | **#11 / BL-042:** IaC + LocalStack (AWS CDK Java first, with ADR if switching); cloud infrastructure tests and teardown |
+| After explicit budget/security review | No financial correctness change | **#12 / BL-043:** Optional actual AWS sandbox (synthetic data), manual CD approval, cost alarms, TLS, private DB, logs, rollback and teardown |
 
-## Infrastructure tracks
-**Local development:** Docker Desktop + Docker Compose (Spring Boot, PostgreSQL, Kafka, Keycloak, Analytics, Notification and supporting tools as needed). Use Compose profiles to avoid starting every dependency for every feature.
+**Scheduling:** BL-040 can run as an infrastructure track without blocking BL-004. BL-041 must not be started before the core outbox/event contract. BL-042 can start with IaC design earlier but end-to-end tests require deployable services. BL-043 is opt-in and never automatically triggered by a merge.
 
-**Local AWS emulation:** IaC using CloudFormation or Terraform selected by ADR; LocalStack support depends on edition and service/API. Track any unsupported AWS behavior explicitly.
+## Technology and operational requirements
 
-**Actual AWS (optional and paid):** ECR image registry; choose ECS Fargate vs EC2/Compose through a cost/security ADR; RDS or sandbox database option; CloudWatch; private networking; secrets management; HTTPS; CI/CD with manual approval. Do not default to MSK, NAT Gateway or always-on ALB without a budget estimate. Use synthetic data only.
+1. **Local Docker:** multi-stage JDK 21 image, non-root runtime, healthchecks, Compose profiles for core/IAM/messaging/analytics/observability, named DB volumes, localhost-only ports, no committed secrets.
+2. **API Gateway:** required only once multiple services justify a gateway; TLS termination, auth boundary, rate limiting, correlation and documented routes. Do not mistake gateway JWT validation for authorization of account ownership.
+3. **gRPC:** typed internal service-to-service unary RPC where a separate risk service is justified, with deadlines and error policy; no remote RPC inside the locked ledger transaction.
+4. **Kafka:** versioned Protobuf/JSON event contracts, outbox relay, idempotent consumers, retries/DLQ, partition ordering and replay. Exactly-once Kafka processing does not imply exactly-once external DB writes.
+5. **Analytics:** own read model, dedupe, aggregated transfer metrics, replay and access-controlled REST/OpenAPI; never change authoritative ledger or perform synchronous fraud authorization.
+6. **AWS IaC:** course uses **Java AWS CDK**, synthesizing CloudFormation; LocalStack emulation support varies by edition. Evaluate VPC, ECS/Fargate, RDS, MSK, ALB, logs, DNS/healthchecks, IAM, ECR, secrets and AWS budgets individually.
+7. **CI/CD:** automated tests, integration/contract checks, image scanning, build/push to registry, deploy with human approval, smoke tests, rollback, drift detection and environment separation.
+8. **Observability:** structured/redacted logs, OpenTelemetry tracing, Micrometer/Prometheus/Grafana locally, CloudWatch in AWS, health/readiness, consumer lag, outbox backlog, alerts and SLO evidence.
+9. **Security:** TLS, OIDC/RBAC + resource ownership, least-privilege AWS IAM, secret rotation, dependency/SAST checks, no PII in Kafka/logs, backup/restore and disaster recovery.
+10. **Financial invariants:** double-entry balanced journal, immutable posting, atomic transfer, idempotency and concurrency testing are more important than technology parity with a patient-management tutorial.
 
-## Cross-cutting Definition of Done
-1. Reviewed business rules and acceptance tests.
-2. Build/tests/DB migration pass; concurrency/fault tests for money movement.
-3. Swagger/OpenAPI and versioned Kafka/gRPC contracts where applicable.
-4. Security and privacy reviewed; no secrets/PII in git, events or logs.
-5. Docker and deployment changes have reproducible instructions and rollback.
-6. GitHub PR reviewed by owner. No AI self-approval or direct main push.
+## Issue and PR workflow
+- [#9 Docker](https://github.com/ThanhDat19/app-bank/issues/9)
+- [#10 Analytics](https://github.com/ThanhDat19/app-bank/issues/10)
+- [#11 AWS CDK/LocalStack](https://github.com/ThanhDat19/app-bank/issues/11)
+- [#12 Optional AWS sandbox](https://github.com/ThanhDat19/app-bank/issues/12)
 
-## Reference mapping
-Source video: https://www.youtube.com/watch?v=tseqdcFfTUY
-Source repo: https://github.com/chrisblakely01/java-spring-microservices
-- Docker ~02:49–03:28
-- gRPC ~03:28–04:43
-- Kafka ~04:43–05:33
-- Analytics service ~05:33–06:02
-- Gateway/Auth ~06:02–08:40
-- Integration tests ~08:45–09:23
-- AWS/LocalStack/IaC ~09:23–11:37
-- Docker images and LocalStack deployment ~11:37–11:58
-
-These are instructional references, not proof that the banking system has implemented these capabilities.
+**Approval required:** human owner reviews architecture, financial correctness, PR diff, AWS budget and every cloud deployment. This document is planning only; no cloud resources are created.
