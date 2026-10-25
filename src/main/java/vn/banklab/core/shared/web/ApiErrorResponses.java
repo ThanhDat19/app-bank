@@ -12,6 +12,12 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @ApiResponses({
+        @ApiResponse(responseCode = "401", description = "A valid access token is required",
+                content = @Content(mediaType = "application/problem+json",
+                        schema = @Schema(implementation = ApiProblem.class))),
+        @ApiResponse(responseCode = "403", description = "The actor lacks permission",
+                content = @Content(mediaType = "application/problem+json",
+                        schema = @Schema(implementation = ApiProblem.class))),
         @ApiResponse(responseCode = "default", description = "Request rejected; inspect code and correlationId",
                 content = @Content(mediaType = "application/problem+json",
                         schema = @Schema(implementation = ApiProblem.class))),

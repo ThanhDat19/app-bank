@@ -17,6 +17,16 @@ public final class ApiProblem extends ProblemDetail {
     private final String correlationId;
     private final List<FieldViolation> errors;
 
+    public static ApiProblem unauthenticated(String correlationId) {
+        return new ApiProblem(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED",
+                "A valid access token is required.", correlationId, List.of());
+    }
+
+    public static ApiProblem forbidden(String correlationId) {
+        return new ApiProblem(HttpStatus.FORBIDDEN, "ACCESS_DENIED",
+                "The current actor is not permitted to perform this operation.", correlationId, List.of());
+    }
+
     ApiProblem(HttpStatusCode status, String code, String detail, String correlationId,
                List<FieldViolation> errors) {
         super(status.value());

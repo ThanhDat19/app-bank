@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vn.banklab.core.shared.application.BusinessException;
+import vn.banklab.core.support.WebContractSecurity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -35,7 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ApiErrorContractTest.ProbeController.class)
-@Import({ApiErrorContractTest.ProbeController.class, ApiExceptionHandler.class, CorrelationIdFilter.class})
+@Import({ApiErrorContractTest.ProbeController.class, ApiExceptionHandler.class, CorrelationIdFilter.class,
+        WebContractSecurity.class})
 class ApiErrorContractTest {
 
     @Autowired
