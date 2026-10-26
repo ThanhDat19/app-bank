@@ -78,7 +78,7 @@ class BootstrapIT {
 
     @Test
     void startsWithPostgresAndMigratesExactlyOnce() throws Exception {
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("2");
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("3");
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (Connection connection = DriverManager.getConnection(
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());

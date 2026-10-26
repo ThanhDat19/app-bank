@@ -9,6 +9,7 @@ import vn.banklab.core.iam.application.Actor;
 public interface CustomerRepository {
     boolean insert(Customer customer);
     Optional<Customer> findByIdentity(String issuer, String subject);
+    Optional<Customer> findByIdentityForUpdate(String issuer, String subject);
     Optional<Customer> findOwned(UUID id, String issuer, String subject);
     Optional<Customer> findById(UUID id);
     boolean updateDecision(Customer before, Customer after);
