@@ -57,6 +57,21 @@ public class JdbcAccountRepository implements AccountRepository {
     }
 
     @Override
+    public List<Account> lockByIds(java.util.Set<UUID> ids) {
+        return jdbc.sql("SELECT * FROM banking.accounts WHERE id IN (:ids) ORDER BY id FOR UPDATE")
+                .param("ids", ids).query(MAPPER).list();
+    }
+
+    @Override
+    public void markLedgerProvisioned(UUID id) {
+        int updated = jdbc.sql("UPDATE banking.accounts SET ledger_provisioned=TRUE WHERE id=:id AND status='ACTIVE'")
+                .param("id", id).update();
+        if (updated != 1) {
+            throw new IllegalStateException("Active locked account required");
+        }
+    }
+
+    @Override
     public boolean update(Account before, Account after) {
         return jdbc.sql("""
                         UPDATE banking.accounts SET status = :after, version = version + 1, updated_at = :now
