@@ -4,6 +4,9 @@ Issue [#14](https://github.com/ThanhDat19/app-bank/issues/14). Tài khoản than
 trước khi xây Ledger. Đây là metadata/state API; không có balance, cash-in, transfer hoặc ghi tiền.
 Policy trong PR cần owner review; chưa phải chính sách sản phẩm/ngân hàng thật.
 
+**Cập nhật BL-006:** Ledger/closure adapter đã được triển khai. Sau provision, account balance 0 có thể
+close; nonzero bị chặn. Phần dưới giữ mô tả baseline BL-005; xem [Ledger](ledger.md) cho behavior hiện tại.
+
 ## Business rules
 
 | ID | Quy tắc | Bảo vệ |
