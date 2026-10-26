@@ -43,6 +43,12 @@ public class JdbcCustomerRepository implements CustomerRepository {
     }
 
     @Override
+    public Optional<Customer> findByIdentityForUpdate(String issuer, String subject) {
+        return jdbc.sql(SELECT + "WHERE identity_issuer = :issuer AND identity_subject = :subject FOR UPDATE")
+                .param("issuer", issuer).param("subject", subject).query(MAPPER).optional();
+    }
+
+    @Override
     public Optional<Customer> findOwned(UUID id, String issuer, String subject) {
         return jdbc.sql(SELECT + "WHERE id = :id AND identity_issuer = :issuer AND identity_subject = :subject")
                 .param("id", id).param("issuer", issuer).param("subject", subject).query(MAPPER).optional();
