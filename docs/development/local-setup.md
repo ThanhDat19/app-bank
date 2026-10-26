@@ -74,7 +74,9 @@ Linux/macOS dùng `./mvnw`, tự export `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, 
 
 Đây là metadata, không xác nhận sẵn sàng giao dịch. Health mới kiểm tra database.
 Flyway V1 tạo schema `banking`; V2 của BL-004 thêm `banking.customers` và `banking.kyc_decisions`.
+V3 của BL-005 thêm `banking.accounts`, `banking.account_state_changes` và sequence số tài khoản.
 Xem [hướng dẫn Customer/KYC](local-customer-kyc.md) để tạo dữ liệu qua API, không insert thủ công.
+Sau KYC VERIFIED, thử [Account lifecycle](local-account-lifecycle.md).
 Hibernate chỉ `validate`, không tạo/sửa schema tự động. Không có dữ liệu tiền hoặc số dư khởi tạo.
 
 ## BL-002: Theo dõi lỗi khi thử API

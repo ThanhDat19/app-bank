@@ -22,8 +22,8 @@ giữ số commit bằng một con số nếu diff mất khả năng review. Đ�
 | S01: 02–08/11 | BL-002 API conventions & module boundaries | BL-001 merge | Problem Details + business codes, correlation ID, package rules; malformed request/error contract tests |
 | S02: 09–15/11 | BL-003 IAM baseline | BL-002 | OIDC/resource server, issuer/audience, roles, actor context; 401/403 và token negative tests |
 | S03: 16–22/11 | BL-004 Customer & KYC giả lập | BL-003 | Tạo/xem khách hàng, KYC transitions, ownership, unique constraints; không public PII |
-| S04: 23–29/11 | BL-005 Account lifecycle | BL-004 | Mở/freeze/close, state matrix, ownership; đóng khi zero balance và không hold theo policy |
-| S05: 30/11–06/12 | BL-006 Ledger foundation | BL-005 | Chart of accounts, journal/postings, debit/credit, DB balance guard, append-only; reject unbalanced journal |
+| S04: 23–29/11 | BL-005 Account lifecycle | BL-004 | Mở/freeze/unfreeze/close, state matrix, ownership; chỉ close account chưa provision Ledger, đã provision thì fail closed |
+| S05: 30/11–06/12 | BL-006 Ledger foundation | BL-005 | Chart of accounts, journal/postings, debit/credit, DB balance guard, append-only; provisioning + closure adapter và race tests trước ghi tiền |
 | S06: 07–13/12 | BL-007 Idempotent cash-in mô phỏng | BL-006 | Đối ứng rõ, quyền operator, request hash/unique key, retry không nạp trùng, rollback nguyên tử |
 | S07: 14–20/12 | BL-008 Internal transfer an toàn | BL-007 | Ordered locks, kiểm tra cuối sau khóa, idempotency cùng transaction, trạng thái/lookup; không overspend |
 | S08: 21–27/12 | BL-009 Concurrency + BL-010 Reversal | BL-008 | Stress tranh chấp, lost response/retry, immutable ledger, full reversal policy và duplicate reversal tests |
@@ -55,6 +55,11 @@ sprint tương ứng và phải dùng ID GitHub thực trong PR. Không tạo tr
 
 Chỉ chuyển tác vụ phụ thuộc khi owner đã review/merge mốc liên quan. Có thể tiếp tục soạn đặc tả,
 đọc tài liệu hoặc sửa review trong thời gian chờ; không tự merge để giữ tiến độ.
+
+BL-005 không giả lập balance/hold bằng 0 để cho đóng account. BL-006 phải khóa account khi provision Ledger,
+đặt marker liên kết cùng transaction và nối closure guard với balance/pending work trước cash-in.
+BL-011 khi thêm holds phải mở rộng guard và test hold-vs-close. Chi tiết tại
+[đặc tả account](../api/account-lifecycle.md); đây là điều chỉnh ranh giới dependency, không thay thứ tự core.
 
 ## Phân công
 
