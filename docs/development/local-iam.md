@@ -38,8 +38,9 @@ Không điền client secret: đây là public client dùng PKCE. Đăng nhập 
 Thử `GET /api/v1/iam/me`: HTTP 200 trả issuer, subject và `["CUSTOMER"]`.
 
 Chưa có Customer/Account thì kết quả này vẫn hợp lệ: endpoint đọc danh tính đã xác minh từ token,
-không truy vấn hồ sơ ngân hàng. PostgreSQL chỉ có `banking` và `public.flyway_schema_history` ở phiên này.
-Không chèn thủ công balance hoặc customer để làm login. BL-004 sẽ thêm bảng và API Customer/KYC.
+không truy vấn hồ sơ ngân hàng. Trước BL-004, PostgreSQL chỉ có schema banking và Flyway history;
+BL-004 thêm bảng/API Customer/KYC qua V2. Xem [luồng Customer/KYC](local-customer-kyc.md) sau khi login.
+Không chèn thủ công balance hoặc customer để làm login.
 Không có bearer token → 401. Có token nhưng chưa gán đúng client role → 403.
 
 Để đổi tài khoản, logout/clear authorization trong Swagger và đăng xuất phiên realm Keycloak trước khi
