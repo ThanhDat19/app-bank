@@ -14,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -40,9 +41,13 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CustomerIT {
     static final SignedTokenServer TOKENS;
+
     static {
-        try { TOKENS = new SignedTokenServer(); }
-        catch (Exception error) { throw new ExceptionInInitializerError(error); }
+        try {
+            TOKENS = new SignedTokenServer();
+        } catch (Exception error) {
+            throw new ExceptionInInitializerError(error);
+        }
     }
 
     @Container
@@ -58,12 +63,17 @@ class CustomerIT {
         registry.add("bank.iam.audience", () -> "bank-api");
     }
 
-    @LocalServerPort int port;
-    @Autowired JdbcClient jdbc;
+    @LocalServerPort
+    int port;
+    @Autowired
+    JdbcClient jdbc;
     private final HttpClient http = HttpClient.newHttpClient();
     private final JsonMapper json = JsonMapper.builder().build();
 
-    @AfterAll static void closeTokenServer() { TOKENS.close(); }
+    @AfterAll
+    static void closeTokenServer() {
+        TOKENS.close();
+    }
 
     @Test
     void createsOwnedProfileAndDoesNotExposeIdentityLinks() throws Exception {
@@ -125,7 +135,9 @@ class CustomerIT {
         assertThat(responses.stream().map(HttpResponse::statusCode).toList())
                 .containsOnly(201, 409).filteredOn(status -> status == 201).hasSize(1);
         for (var response : responses) {
-            if (response.statusCode() == 409) { problem(response, 409, "CUSTOMER_ALREADY_EXISTS"); }
+            if (response.statusCode() == 409) {
+                problem(response, 409, "CUSTOMER_ALREADY_EXISTS");
+            }
         }
         assertThat(jdbc.sql("SELECT count(*) FROM banking.customers WHERE identity_issuer = :issuer AND identity_subject = :subject")
                 .param("issuer", TOKENS.issuer()).param("subject", subject).query(Long.class).single()).isEqualTo(1);
@@ -202,7 +214,9 @@ class CustomerIT {
         assertThat(responses.stream().map(HttpResponse::statusCode).toList())
                 .containsOnly(200, 409).filteredOn(status -> status == 200).hasSize(1);
         for (var response : responses) {
-            if (response.statusCode() == 409) { problem(response, 409, "CUSTOMER_VERSION_CONFLICT"); }
+            if (response.statusCode() == 409) {
+                problem(response, 409, "CUSTOMER_VERSION_CONFLICT");
+            }
         }
         assertThat(historyCount(id)).isEqualTo(1);
         assertThat(jdbc.sql("SELECT version FROM banking.customers WHERE id = :id").param("id", id)
@@ -237,7 +251,7 @@ class CustomerIT {
             statement.execute("CREATE TABLE public.upgrade_marker (value TEXT); INSERT INTO public.upgrade_marker VALUES ('preserved')");
         }
         var flyway = Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(3);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var connection = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword());
              var statement = connection.createStatement(); var rows = statement.executeQuery("SELECT value FROM public.upgrade_marker")) {
@@ -294,13 +308,19 @@ class CustomerIT {
         return TOKENS.token(claims -> claims.subject(subject).claim("resource_access", Map.of("bank-api", Map.of("roles", List.of(roles)))));
     }
 
-    private JsonNode tree(HttpResponse<String> response) { return json.readTree(response.body()); }
+    private JsonNode tree(HttpResponse<String> response) {
+        return json.readTree(response.body());
+    }
 
     private HttpResponse<String> request(String method, String path, String token, String body) throws Exception {
         var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).timeout(Duration.ofSeconds(20))
                 .header("X-Correlation-ID", "customer-004");
-        if (token != null) { request.header("Authorization", "Bearer " + token); }
-        if (body != null) { request.header("Content-Type", "application/json"); }
+        if (token != null) {
+            request.header("Authorization", "Bearer " + token);
+        }
+        if (body != null) {
+            request.header("Content-Type", "application/json");
+        }
         request.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body));
         return http.send(request.build(), HttpResponse.BodyHandlers.ofString());
     }
@@ -319,12 +339,18 @@ class CustomerIT {
         try (var pool = Executors.newFixedThreadPool(count)) {
             var futures = new ArrayList<java.util.concurrent.Future<HttpResponse<String>>>();
             for (int i = 0; i < count; i++) {
-                futures.add(pool.submit(() -> { ready.countDown(); start.await(10, TimeUnit.SECONDS); return call.call(); }));
+                futures.add(pool.submit(() -> {
+                    ready.countDown();
+                    start.await(10, TimeUnit.SECONDS);
+                    return call.call();
+                }));
             }
             assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
             start.countDown();
             var responses = new ArrayList<HttpResponse<String>>();
-            for (var future : futures) { responses.add(future.get(30, TimeUnit.SECONDS)); }
+            for (var future : futures) {
+                responses.add(future.get(30, TimeUnit.SECONDS));
+            }
             return responses;
         }
     }
