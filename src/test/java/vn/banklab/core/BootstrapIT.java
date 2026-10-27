@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+
 import com.nimbusds.jwt.PlainJWT;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
@@ -78,7 +79,7 @@ class BootstrapIT {
 
     @Test
     void startsWithPostgresAndMigratesExactlyOnce() throws Exception {
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("3");
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("4");
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (Connection connection = DriverManager.getConnection(
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
@@ -139,7 +140,7 @@ class BootstrapIT {
     @Test
     void errorContractMatchesCorrelationHeaderOverRealHttp() throws Exception {
         var response = client.send(HttpRequest.newBuilder(URI.create(
-                "http://127.0.0.1:" + port + "/api/v1/missing?token=do-not-expose"))
+                        "http://127.0.0.1:" + port + "/api/v1/missing?token=do-not-expose"))
                 .header("Authorization", "Bearer " + TOKENS.token())
                 .header("X-Correlation-ID", "integration-002").GET().build(), HttpResponse.BodyHandlers.ofString());
         assertThat(response.statusCode()).isEqualTo(404);

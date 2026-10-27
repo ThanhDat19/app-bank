@@ -18,6 +18,10 @@ public interface AccountRepository {
 
     Optional<Account> findById(UUID id, boolean lock);
 
+    List<Account> lockByIds(java.util.Set<UUID> ids);
+
+    void markLedgerProvisioned(UUID id);
+
     boolean update(Account before, Account after);
 
     void appendHistory(Account before, Account after, AccountReason reason, Actor actor);

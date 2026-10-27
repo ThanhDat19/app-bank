@@ -3,10 +3,14 @@ package vn.banklab.core;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.jar.JarFile;
+
 import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Tests from target/classes can pass even when packaging omitted a module. Verify the shipped artifact. */
+/**
+ * Tests from target/classes can pass even when packaging omitted a module. Verify the shipped artifact.
+ */
 class PackagedApplicationIT {
     @Test
     void bootJarContainsEveryProductionTopLevelClassAndMigrations() throws Exception {
@@ -23,6 +27,7 @@ class PackagedApplicationIT {
                 assertThat(jar.getJarEntry(entry)).as("Packaged production class %s", entry).isNotNull();
             }
             assertThat(jar.getJarEntry("BOOT-INF/classes/db/migration/V3__create_accounts_and_lifecycle_history.sql")).isNotNull();
+            assertThat(jar.getJarEntry("BOOT-INF/classes/db/migration/V4__create_double_entry_ledger.sql")).isNotNull();
             assertThat(jar.stream().map(entry -> entry.getName()).anyMatch(name -> name.contains("SecurityProbe"))).isFalse();
         }
     }

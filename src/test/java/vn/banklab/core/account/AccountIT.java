@@ -131,10 +131,10 @@ class AccountIT {
     }
 
     @Test
-    void ledgerProvisionedAccountCannotCloseWithoutAuthoritativeFinancialChecks() throws Exception {
+    void provisioningMarkerCannotBeForgedWithoutLedgerLink() throws Exception {
         var owner = opened();
-        jdbc.sql("UPDATE banking.accounts SET ledger_provisioned=TRUE WHERE id=:id").param("id", owner.accountId()).update();
-        problem(command(owner.accountId(), "close", owner.token(), 0, "CUSTOMER_REQUEST", false), 422, "ACCOUNT_CLOSURE_UNAVAILABLE");
+        assertThatThrownBy(() -> jdbc.sql("UPDATE banking.accounts SET ledger_provisioned=TRUE WHERE id=:id")
+                .param("id", owner.accountId()).update()).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         assertStored(owner.accountId(), "ACTIVE", 0);
         assertThat(historyCount(owner.accountId())).isEqualTo(1);
     }
@@ -251,7 +251,7 @@ class AccountIT {
             s.execute("INSERT INTO banking.customers (id,identity_issuer,identity_subject,display_name,created_at,updated_at) VALUES ('" + UUID.randomUUID() + "','issuer','preserved','Preserved Demo',now(),now())");
         }
         var flyway = Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword()); var s = c.createStatement(); var r = s.executeQuery("SELECT display_name FROM banking.customers WHERE identity_subject='preserved'")) {
             assertThat(r.next()).isTrue();

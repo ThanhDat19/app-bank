@@ -1,5 +1,8 @@
 # Thử Account lifecycle trên Swagger
 
+Từ BL-006, tài khoản đã provision Ledger và posted balance 0 cũng có thể đóng; xem [Ledger guide](local-ledger.md).
+Các bước bên dưới vẫn áp dụng cho account chưa provision; limitation closure adapter của BL-005 đã được thay.
+
 Cần hai user khác nhau trong realm `bank-lab`: CUSTOMER và OPERATOR của client `bank-api`.
 Làm [Customer/KYC](local-customer-kyc.md) trước: CUSTOMER tạo profile, OPERATOR khác identity duyệt VERIFIED.
 
