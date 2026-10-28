@@ -33,6 +33,11 @@ public class JdbcLedgerRepository implements LedgerRepository {
     }
 
     @Override
+    public Optional<LedgerAccount> findCashClearing() {
+        return jdbc.sql("SELECT * FROM banking.ledger_accounts WHERE code='VND_CASH_CLEARING'").query(MAPPER).optional();
+    }
+
+    @Override
     public LedgerAccount insertCustomer(UUID id, String currency, Instant now) {
         return jdbc.sql("""
                         INSERT INTO banking.ledger_accounts (id,code,name,account_type,normal_side,currency,bank_account_id,created_at)

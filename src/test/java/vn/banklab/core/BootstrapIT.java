@@ -79,7 +79,7 @@ class BootstrapIT {
 
     @Test
     void startsWithPostgresAndMigratesExactlyOnce() throws Exception {
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("4");
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("5");
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (Connection connection = DriverManager.getConnection(
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
@@ -157,7 +157,9 @@ class BootstrapIT {
 
     private HttpResponse<String> get(String path) throws Exception {
         return client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
-                .timeout(java.time.Duration.ofSeconds(15)).GET().build(), HttpResponse.BodyHandlers.ofString());
+                // OpenAPI is generated lazily; cold schema generation is not a request-latency SLO.
+                .timeout(java.time.Duration.ofSeconds(path.startsWith("/v3/api-docs") ? 60 : 15))
+                .GET().build(), HttpResponse.BodyHandlers.ofString());
     }
 
     @AfterAll
