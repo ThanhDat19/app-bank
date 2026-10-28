@@ -2,8 +2,8 @@
 
 ## Actors và business rules
 
-CUSTOMER có account ACTIVE được provision Ledger và xem balance của mình. OPERATOR chỉ xem balance
-qua operations route. Các use cases nạp/chuyển/đảo tiền chưa có REST trong BL-006.
+CUSTOMER có account ACTIVE được provision Ledger và xem balance của mình. OPERATOR xem balance
+qua operations route. BL-006 không có REST ghi tiền; BL-007 bổ sung [cash-in mô phỏng có idempotency](cash-in.md).
 
 | Rule | Điều kiện | Bảo vệ/test |
 | --- | --- | --- |
@@ -125,6 +125,6 @@ LedgerIT có HTTP JWT/JWKS thật cho ownership/roles/provision/balance; interna
 kiểm tra constraints/locks. JournalPlanTest kiểm tra arithmetic/amount/shape thuần Java. PackagedApplicationIT
 kiểm tra đủ source classes và migration V4 trong JAR. Chi tiết kết quả ở [phiếu review](../reviews/BL-006.md).
 
-Giới hạn: chưa public cash-in/transfer/reversal, holds/pending payment, projection/reconciliation jobs,
+Giới hạn BL-006: chưa public cash-in/transfer/reversal, holds/pending payment, projection/reconciliation jobs,
 production DB role separation, audit chống DBA sửa, multi-currency hoặc báo cáo hiệu năng. Xem
 [ADR-004](../architecture/ADR-004-ledger-posting.md) về lý do, tradeoffs và gates trước feature tiền.

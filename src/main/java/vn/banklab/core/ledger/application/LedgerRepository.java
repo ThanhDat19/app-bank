@@ -17,6 +17,8 @@ public interface LedgerRepository {
 
     Optional<LedgerAccount> findForBank(UUID accountId);
 
+    Optional<LedgerAccount> findCashClearing();
+
     LedgerAccount insertCustomer(UUID accountId, String currency, Instant now);
 
     List<LedgerAccount> findAccounts(Set<UUID> ids, boolean lock);
