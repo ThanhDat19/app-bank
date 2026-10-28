@@ -77,9 +77,11 @@ Flyway V1 tạo schema `banking`; V2 của BL-004 thêm `banking.customers` và 
 V3 của BL-005 thêm `banking.accounts`, `banking.account_state_changes` và sequence số tài khoản.
 V4 của BL-006 thêm chart/ledger journals/postings và DB guards; chỉ seed clearing metadata, không seed tiền.
 V5 của BL-007 thêm cash-in claims/receipts và idempotency guards; không seed tiền.
+V6 của BL-008 thêm transfer claims/receipts và DB guards; không seed tiền.
 Xem [hướng dẫn Customer/KYC](local-customer-kyc.md) để tạo dữ liệu qua API, không insert thủ công.
 Sau KYC VERIFIED, thử [Account lifecycle](local-account-lifecycle.md).
 Sau account ACTIVE, thử [Ledger provisioning/balance](local-ledger.md), rồi [cash-in mô phỏng](local-cash-in.md).
+Sau đó dùng hai customer accounts để thử [chuyển tiền nội bộ](local-internal-transfer.md).
 Khi đổi phiên có class bị xóa/thay,
 dừng backend cũ rồi clean build hoặc Rebuild Project trước khi Run để tránh class cũ còn trong target.
 Hibernate chỉ `validate`, không tạo/sửa schema tự động. Không có dữ liệu tiền hoặc số dư khởi tạo.
