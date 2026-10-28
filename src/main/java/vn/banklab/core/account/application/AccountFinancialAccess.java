@@ -33,6 +33,21 @@ public class AccountFinancialAccess {
         return active(accounts.findOwned(id, customerId, true).orElseThrow(AccountFinancialAccess::notFound));
     }
 
+    /** Authorize without locking first, then lock the entire pair in database UUID order.
+     * Locking the source first would deadlock opposite-direction transfers.
+     */
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<Reference> lockOwnedTransferPair(UUID sourceId, UUID destinationId) {
+        var customerId = customers.ownedCustomerId().orElseThrow(AccountFinancialAccess::notFound);
+        accounts.findOwned(sourceId, customerId, false).orElseThrow(AccountFinancialAccess::notFound);
+        var locked = accounts.lockByIds(Set.of(sourceId, destinationId));
+        if (locked.size() != 2 || locked.stream().noneMatch(a -> a.id().equals(sourceId) && a.customerId().equals(customerId))) {
+            throw notFound();
+        }
+        return locked.stream().map(AccountFinancialAccess::active).toList();
+    }
+
     /**
      * Trusted financial application callers must perform command-specific authorization before invoking this.
      */
