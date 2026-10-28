@@ -59,6 +59,9 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 - [BL-007: Đặc tả cash-in và idempotency](docs/api/cash-in.md)
 - [BL-007: Thử nạp tiền mô phỏng trên Swagger](docs/development/local-cash-in.md)
 - [BL-007: Bằng chứng kiểm thử và phiếu review](docs/reviews/BL-007.md)
+- [BL-008: Đặc tả internal transfer, locks và idempotency](docs/api/internal-transfer.md)
+- [BL-008: Thử chuyển tiền nội bộ trên Swagger](docs/development/local-internal-transfer.md)
+- [BL-008: Bằng chứng kiểm thử và phiếu review](docs/reviews/BL-008.md)
 
 BL-001 cung cấp nền tảng; BL-002 bổ sung hợp đồng lỗi, correlation và kiểm tra ranh giới module.
 BL-003 bổ sung xác thực qua Keycloak và actor context; `/iam/me` đọc JWT đã xác minh.
@@ -68,6 +71,7 @@ BL-005 thêm tài khoản VND, ownership và open/freeze/unfreeze/close với hi
 BL-006 thêm Ledger VND bất biến, internal posting contract, API liên kết và đọc số dư POSTED dạng string.
 Account đã provision chỉ đóng khi posted balance bằng 0.
 BL-007 thêm OPERATOR cash-in mô phỏng, request hash/key và receipt bền vững cùng transaction với Ledger;
-retry cùng key/payload không tạo tiền lần hai. Chưa có public transfer hoặc available balance.
+retry cùng key/payload không tạo tiền lần hai. BL-008 thêm CUSTOMER chuyển VND nội bộ với source ownership,
+ordered pair locks, no overspend và receipt/idempotency nguyên tử. Chưa có available balance.
 Chỉ dùng dữ liệu tổng hợp; dự án chưa có chứng nhận
 nghiệp vụ, an ninh hay vận hành cho ngân hàng thực tế.
