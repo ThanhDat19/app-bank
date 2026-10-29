@@ -32,7 +32,7 @@ class CashInMigrationIT {
             connection.commit();
         }
         var flyway = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(3);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var connection = connection(); var sql = connection.createStatement()) {
             try (var result = sql.executeQuery("SELECT banking.ledger_balance('" + ledger + "')")) {

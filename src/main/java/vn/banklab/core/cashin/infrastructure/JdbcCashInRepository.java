@@ -46,6 +46,12 @@ public class JdbcCashInRepository implements CashInRepository {
     }
 
     @Override
+    public boolean hasPostedJournal(UUID id) {
+        return jdbc.sql("SELECT EXISTS(SELECT 1 FROM banking.cash_ins WHERE journal_id=:id)")
+                .param("id", id).query(Boolean.class).single();
+    }
+
+    @Override
     public Optional<CashInReceipt> findOwned(UUID id, Actor actor) {
         return jdbc.sql("""
                 SELECT * FROM banking.cash_ins

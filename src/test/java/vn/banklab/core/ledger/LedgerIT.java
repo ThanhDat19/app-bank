@@ -380,7 +380,7 @@ class LedgerIT {
     void migrationFromV3PreservesAccountAndSeedsOnlyChartMetadata() throws Exception {
         String url = upgradeDatabase("ledger_upgrade", false);
         var flyway = Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword()); var s = c.createStatement();
              var r = s.executeQuery("SELECT (SELECT count(*) FROM banking.accounts), (SELECT count(*) FROM banking.ledger_accounts), (SELECT count(*) FROM banking.ledger_journals)")) {

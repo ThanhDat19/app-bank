@@ -251,7 +251,7 @@ class CustomerIT {
             statement.execute("CREATE TABLE public.upgrade_marker (value TEXT); INSERT INTO public.upgrade_marker VALUES ('preserved')");
         }
         var flyway = Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(6);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var connection = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword());
              var statement = connection.createStatement(); var rows = statement.executeQuery("SELECT value FROM public.upgrade_marker")) {

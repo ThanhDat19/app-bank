@@ -251,7 +251,7 @@ class AccountIT {
             s.execute("INSERT INTO banking.customers (id,identity_issuer,identity_subject,display_name,created_at,updated_at) VALUES ('" + UUID.randomUUID() + "','issuer','preserved','Preserved Demo',now(),now())");
         }
         var flyway = Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(3);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(5);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword()); var s = c.createStatement(); var r = s.executeQuery("SELECT display_name FROM banking.customers WHERE identity_subject='preserved'")) {
             assertThat(r.next()).isTrue();

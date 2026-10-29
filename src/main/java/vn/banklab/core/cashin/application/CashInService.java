@@ -58,6 +58,12 @@ public class CashInService {
                 new BusinessException("CASH_IN_NOT_FOUND", BusinessException.Kind.NOT_FOUND));
     }
 
+    /** Internal eligibility contract; does not expose another operator's receipt over HTTP. */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public boolean hasPostedJournal(UUID id) {
+        return cashIns.hasPostedJournal(id);
+    }
+
     private static String hash(String value) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
