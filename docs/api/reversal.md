@@ -15,7 +15,7 @@ giữ cấu trúc hiện tại. Owner merge dependency trước PR mới; AI kh�
 | REV-06 | Accounts phải ACTIVE/provisioned; giữ no-negative/max-balance guards, không overdraft/state override. |
 | REV-07 | Reason OPERATOR_ERROR hoặc DUPLICATE_PROCESSING, lưu cùng verified actor/timestamp. |
 | REV-08 | Claim/hash/key, original serialization, inverse journal/postings/receipt cùng READ COMMITTED transaction. |
-| REV-09 | Same actor/key/payload replay201; changed payload409; khác key cho original đã hoàn409. |
+| REV-09 | Same actor/key/payload replay 201; changed payload tr? 409; khác key cho original đã hoàn409. |
 | REV-10 | GET receipt chỉ verified operator identity đã tạo; khác operator/missing cùng404. |
 | REV-11 | Completed receipt/key append-only, giữ vô thời hạn; lỗi rollback cả key và tiền, không cache failure. |
 
@@ -106,7 +106,7 @@ disable triggers; chưa production DB role separation/tamper evidence.
 
 ## BL-009 — Concurrency và lost response
 
-ReversalIT chạy24 writers:8 cash-in,8 A→B,8 B→A; tất cả commit và tổng money chỉ tăng theo cash-in.
+ReversalIT chạy24 writers: 8 cash-in, 8 A→B, 8 B→A; tất cả commit và tổng money chỉ tăng theo cash-in.
 Đây là correctness stress nhỏ, không throughput/SLO benchmark. Reversal races bao gồm nhiều keys/operators,
 spend/freeze/close và fault tại finalize/receipt/deferred commit.
 
