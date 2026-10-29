@@ -11,6 +11,8 @@ import vn.banklab.core.iam.application.Actor;
 import vn.banklab.core.ledger.domain.JournalPlan;
 
 public interface LedgerRepository {
+    record Journal(UUID id, LedgerPostingCommand.Kind kind, String status) { }
+
     record LedgerAccount(UUID id, String code, UUID bankAccountId, String currency, String accountType,
                          String normalSide) {
     }
@@ -26,6 +28,10 @@ public interface LedgerRepository {
     BigDecimal balance(UUID ledgerId);
 
     boolean referenceExists(UUID referenceId);
+
+    Optional<Journal> lockJournal(UUID journalId);
+
+    List<LedgerPostingCommand.Posting> postings(UUID journalId);
 
     void insertJournal(UUID id, LedgerPostingCommand command, Actor actor, Instant now);
 

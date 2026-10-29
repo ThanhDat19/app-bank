@@ -42,6 +42,12 @@ public class JdbcTransferRepository implements TransferRepository {
     }
 
     @Override
+    public boolean hasPostedJournal(UUID id) {
+        return jdbc.sql("SELECT EXISTS(SELECT 1 FROM banking.transfers WHERE journal_id=:id)")
+                .param("id", id).query(Boolean.class).single();
+    }
+
+    @Override
     public Optional<TransferReceipt> findOwned(UUID id, Actor actor) {
         return jdbc.sql("""
                 SELECT * FROM banking.transfers
