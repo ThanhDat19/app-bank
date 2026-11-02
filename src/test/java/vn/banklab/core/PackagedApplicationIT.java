@@ -33,6 +33,7 @@ class PackagedApplicationIT {
             assertThat(jar.getJarEntry("BOOT-INF/classes/db/migration/V7__create_immutable_full_reversals.sql")).isNotNull();
             assertThat(jar.getJarEntry("BOOT-INF/classes/db/migration/V8__create_holds_and_available_balance.sql")).isNotNull();
             assertThat(jar.getJarEntry("BOOT-INF/classes/db/migration/V9__create_outgoing_limits_and_fees.sql")).isNotNull();
+            assertThat(jar.getJarEntry("BOOT-INF/classes/db/migration/V10__create_transactional_journal_outbox.sql")).isNotNull();
             assertThat(jar.stream().map(entry -> entry.getName()).anyMatch(name -> name.contains("SecurityProbe"))).isFalse();
         }
     }
