@@ -4,16 +4,17 @@
 
 GitHub đã xác nhận [PR #21](https://github.com/ThanhDat19/app-bank/pull/21) (BL-008) và
 [PR #23](https://github.com/ThanhDat19/app-bank/pull/23) (BL-009/010) được owner merge ngày 02/11/2026.
-Main hiện ở `1c68c4b`; local main đã fast-forward. Các phiếu review cũ ghi “chờ merge” là trạng thái lịch sử.
+PR #24 (BL-011) cũng đã được owner merge ngày 02/11/2026. Main hiện ở `aa58fd8`;
+local main đã fast-forward trước khi tạo nhánh BL-012. Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
 
 | Phần | Tình trạng |
 | --- | --- |
 | BL-001–003 | Bootstrap, API conventions/module boundaries, IAM đã có trên main |
 | BL-004–006 | Customer/KYC, account lifecycle, immutable double-entry ledger đã có trên main |
 | BL-007–010 | Idempotent cash-in/transfer, concurrency/recovery, full reversal đã merge |
-| BL-011a | Holds/available balance đã triển khai local trên `feat/BL-011-holds` |
-| BL-011b | Hạn mức transaction/ngày theo timezone và phí nguyên tử đã triển khai local; full verify đạt, chờ review |
-| BL-012 trở đi | Outbox/Kafka/reconciliation/history/external payments/operations theo roadmap |
+| BL-011 | Holds/available balance/limits/fees đã merge PR #24; local 286 tests và CI PASS |
+| BL-012 | Issue #25, `feat/BL-012-transactional-outbox` từ main aa58fd8; journal events/leased relay đã triển khai, local 299 tests PASS; chờ PR/CI và owner review |
+| BL-013 trở đi | Kafka/reconciliation/history/external payments/operations theo roadmap |
 
 Roadmap là thứ tự dependency, lịch sprint ban đầu chưa được re-estimate. Số lượng tác vụ có mã nguồn
 không đồng nghĩa chứng nhận vận hành. Cloud/Analytics addendum vẫn là draft, không thay roadmap chính.
@@ -71,3 +72,11 @@ Mặc định fee 0 và trần kỹ thuật 20 chữ số; chưa có API quản 
 Code và docs nằm local trên `feat/BL-011-holds`, chưa commit/push/CI/PR. Không migrate hoặc ghi dữ liệu vào
 `bank_lab` local; chỉ PostgreSQL Testcontainers tạm. Bước tiếp theo theo roadmap là BL-012 transactional outbox,
 sau khi owner review/nghiệm thu BL-011.
+
+## BL-012 — bản triển khai tiếp theo
+
+BL-011 đã merge PR #24. BL-012 được chuẩn bị theo issue #25 và feature branch riêng từ main mới nhất.
+V10 auto event nguyên tử cùng POSTED journal, immutable envelope + delivery leases, token fencing, retry/backoff;
+default relay off và không fake transport. Local full clean verify **299/299 PASS** (80 unit + 219 integration),
+0 failures/errors/skipped. [Review/evidence](../reviews/BL-012.md).
+GitHub PR/CI là bước bàn giao tiếp theo; trạng thái live xem issue #25/PR liên kết.

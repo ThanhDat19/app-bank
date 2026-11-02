@@ -32,6 +32,9 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 
 ## Tài liệu dự án
 
+- [BL-012: Transactional outbox và delivery guarantees](docs/architecture/ADR-005-transactional-outbox.md)
+- [BL-012: Cấu hình relay, kiểm tra và recovery](docs/development/local-outbox.md)
+
 - [Tình trạng dự án và tiến độ đã đối chiếu](docs/project/status.md)
 - [BL-011a: Holds và số dư khả dụng](docs/api/holds.md)
 - [BL-011b: Hạn mức theo ngày và phí nguyên tử](docs/api/outgoing-policy.md)
