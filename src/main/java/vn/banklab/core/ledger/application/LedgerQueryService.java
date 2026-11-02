@@ -13,7 +13,7 @@ import vn.banklab.core.shared.application.BusinessException;
 @Service
 @Transactional(readOnly = true)
 public class LedgerQueryService {
-    public record Balance(UUID accountId, String currency, BigDecimal postedBalance) {
+    public record Balance(UUID accountId, String currency, BigDecimal postedBalance, BigDecimal reservedBalance, BigDecimal availableBalance) {
     }
 
     public enum Closure {CLEAR, NON_ZERO, UNAVAILABLE}
@@ -44,7 +44,7 @@ public class LedgerQueryService {
         }
         // Provisioning may commit between the ownership read and this lookup. The DB commit constraint
         // guarantees a visible link has its marker; do not reject a valid link using an older marker snapshot.
-        return new Balance(account.id(), linked.get().currency(), ledger.balance(linked.get().id()));
+        return ledger.balanceSnapshot(account.id(), linked.get().id(), linked.get().currency());
     }
 
     /**

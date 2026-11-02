@@ -1,5 +1,8 @@
 # BL-008 — Chuyển tiền nội bộ an toàn
 
+BL-011 mở rộng kiểm tra posted balance thành available balance, thêm gross limits/phí nguyên tử.
+Xem [policy hiện tại](outgoing-policy.md); policy fee=0 mặc định giữ hành vi ví dụ BL-008 bên dưới.
+
 Base main `7f467e8`: owner đã merge BL-007/PR #19. BL-008 dùng posted balance của Ledger và cash-in mô phỏng
 để chuẩn bị tiền thử. Policy bên dưới là phạm vi triển khai để owner review trước merge.
 

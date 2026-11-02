@@ -81,6 +81,8 @@ class LedgerIT {
     PlatformTransactionManager transactions;
     @Autowired
     LedgerPostingService posting;
+    @Autowired
+    vn.banklab.core.ledger.application.OutgoingPolicyRepository outgoing;
     private final HttpClient http = HttpClient.newHttpClient();
     private final JsonMapper json = JsonMapper.builder().build();
     private static final UUID CLEARING = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -380,13 +382,13 @@ class LedgerIT {
     void migrationFromV3PreservesAccountAndSeedsOnlyChartMetadata() throws Exception {
         String url = upgradeDatabase("ledger_upgrade", false);
         var flyway = Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(6);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword()); var s = c.createStatement();
              var r = s.executeQuery("SELECT (SELECT count(*) FROM banking.accounts), (SELECT count(*) FROM banking.ledger_accounts), (SELECT count(*) FROM banking.ledger_journals)")) {
             assertThat(r.next()).isTrue();
             assertThat(r.getLong(1)).isEqualTo(1);
-            assertThat(r.getLong(2)).isEqualTo(1);
+            assertThat(r.getLong(2)).isEqualTo(2);
             assertThat(r.getLong(3)).isZero();
         }
     }
@@ -434,6 +436,325 @@ class LedgerIT {
             insertLine(id, owner.ledgerId(), "CREDIT", "1");
             jdbc.sql("UPDATE banking.ledger_journals SET status='POSTED',posted_at=NULL WHERE id=:id").param("id", id).update();
         }));
+    }
+
+    @Test
+    void holdsReserveReleaseAndReplayWithoutPostingMoney() throws Exception {
+        var source = provisioned(); var destination = provisioned();
+        credit(source, "100");
+        var expiry = Instant.now().plusSeconds(600).toString();
+        String key = UUID.randomUUID().toString();
+        var first = placeHold(source, destination, "60", expiry, key);
+        assertThat(first.statusCode()).isEqualTo(201);
+        String id = tree(first).path("id").asString();
+        assertThat(tree(placeHold(source, destination, "60", expiry, key))).isEqualTo(tree(first));
+        problem(placeHold(source, destination, "61", expiry, key), 409, "IDEMPOTENCY_CONFLICT");
+        assertBalances(source, "100", "60", "40");
+        assertBusiness("LEDGER_INSUFFICIENT_FUNDS", () -> debit(source, "41"));
+        assertThat(holdAction(source, id, "release").statusCode()).isEqualTo(200);
+        assertThat(tree(holdAction(source, id, "release")).path("state").asString()).isEqualTo("RELEASED");
+        assertBalances(source, "100", "0", "100");
+        assertThat(tree(placeHold(source, destination, "60", expiry, key)).path("state").asString()).isEqualTo("RELEASED");
+    }
+
+    @Test
+    void fullCaptureIsAtomicAndIdempotentAcrossConcurrentRequests() throws Exception {
+        var source = provisioned(); var destination = provisioned();
+        credit(source, "100");
+        var first = placeHold(source, destination, "60", Instant.now().plusSeconds(600).toString(), UUID.randomUUID().toString());
+        String id = tree(first).path("id").asString();
+        var results = concurrent(8, () -> holdAction(source, id, "capture"));
+        assertThat(results).allSatisfy(r -> assertThat(r.statusCode()).as(r.body()).isEqualTo(200));
+        assertThat(results.stream().map(r -> tree(r).path("journalId").asString()).distinct().count()).isEqualTo(1);
+        assertBalances(source, "40", "0", "40");
+        assertBalances(destination, "60", "0", "60");
+        problem(holdAction(source, id, "release"), 409, "HOLD_STATE_INVALID");
+        assertThat(journalCount(UUID.fromString(id))).isEqualTo(1);
+    }
+
+    @Test
+    void concurrentReservationsCannotOverbookAvailableMoney() throws Exception {
+        var source = provisioned(); var destination = provisioned(); credit(source, "100");
+        String expiry = Instant.now().plusSeconds(600).toString();
+        var results = concurrent(8, () -> placeHold(source, destination, "30", expiry, UUID.randomUUID().toString()));
+        assertThat(results.stream().filter(r -> r.statusCode()==201).count()).isEqualTo(3);
+        assertThat(results.stream().filter(r -> r.statusCode()==422).count()).isEqualTo(5);
+        assertBalances(source, "100", "90", "10");
+    }
+
+    @Test
+    void captureFailureRestoresReservationAndCanBeRetried() throws Exception {
+        var source = provisioned(); var destination = provisioned(); credit(source, "100");
+        String id = tree(placeHold(source, destination, "60", Instant.now().plusSeconds(600).toString(), UUID.randomUUID().toString())).path("id").asString();
+        jdbc.sql("ALTER TABLE banking.holds ADD CONSTRAINT test_hold_failure CHECK (id<>'"+id+"'::uuid OR journal_id IS NULL)").update();
+        try {
+            problem(holdAction(source, id, "capture"), 500, "INTERNAL_ERROR");
+            assertBalances(source, "100", "60", "40");
+            assertBalances(destination, "0", "0", "0");
+            assertThat(journalCount(UUID.fromString(id))).isZero();
+        } finally { jdbc.sql("ALTER TABLE banking.holds DROP CONSTRAINT test_hold_failure").update(); }
+        assertThat(holdAction(source, id, "capture").statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    void expiryAutomaticallyFreesMoneyAndCannotBeCaptured() throws Exception {
+        var source = provisioned(); var destination = provisioned(); credit(source, "100");
+        var r = placeHold(source, destination, "60", Instant.now().plusSeconds(2).toString(), UUID.randomUUID().toString());
+        assertThat(r.statusCode()).isEqualTo(201);
+        String id = tree(r).path("id").asString();
+        jdbc.sql("SELECT pg_sleep(2.1)").query(Object.class).single();
+        assertBalances(source, "100", "0", "100");
+        assertThat(tree(call("GET", "/api/v1/holds/" + id, source.token(), null)).path("state").asString()).isEqualTo("EXPIRED");
+        problem(holdAction(source, id, "capture"), 409, "HOLD_EXPIRED");
+        assertThat(tree(holdAction(source, id, "release")).path("state").asString()).isEqualTo("EXPIRED");
+        debit(source, "100");
+    }
+
+    @Test
+    void holdsEnforceRolesOwnershipAndFrozenReleasePolicy() throws Exception {
+        var source = provisioned(); var destination = provisioned(); credit(source, "100");
+        String id = tree(placeHold(source, destination, "60", Instant.now().plusSeconds(600).toString(), UUID.randomUUID().toString())).path("id").asString();
+        problem(call("GET", "/api/v1/holds/" + id, null, null), 401, "UNAUTHENTICATED");
+        problem(call("GET", "/api/v1/holds/" + id, operator(), null), 403, "ACCESS_DENIED");
+        problem(call("GET", "/api/v1/holds/" + id, destination.token(), null), 404, "HOLD_NOT_FOUND");
+        problem(holdAction(destination, id, "capture"), 404, "HOLD_NOT_FOUND");
+        assertThat(state(source, "freeze", operator(), 0, "SECURITY_REVIEW", true).statusCode()).isEqualTo(200);
+        problem(holdAction(source, id, "capture"), 409, "ACCOUNT_STATE_INVALID");
+        assertThat(holdAction(source, id, "release").statusCode()).isEqualTo(200);
+        assertBalances(source, "100", "0", "100");
+    }
+
+    @Test
+    void sqlCannotSpendReservationsOrCommitAnUnbackedCapture() throws Exception {
+        var source = provisioned(); var destination = provisioned(); credit(source, "100");
+        String id = tree(placeHold(source, destination, "60", Instant.now().plusSeconds(600).toString(), UUID.randomUUID().toString())).path("id").asString();
+        assertThatThrownBy(() -> tx().execute(s -> {
+            UUID journal = insertDraft(UUID.randomUUID());
+            insertLine(journal, source.ledgerId(), "DEBIT", "50");
+            insertLine(journal, CLEARING, "CREDIT", "50");
+            jdbc.sql("UPDATE banking.ledger_journals SET status='POSTED',posted_at=now() WHERE id=:id").param("id", journal).update();
+            return null;
+        })).isInstanceOf(Exception.class);
+        assertThatThrownBy(() -> tx().execute(s -> {
+            jdbc.sql("UPDATE banking.holds SET state='CAPTURED' WHERE id=:id").param("id", UUID.fromString(id)).update();
+            return null;
+        })).isInstanceOf(Exception.class);
+        assertBalances(source, "100", "60", "40");
+        assertThatThrownBy(() -> jdbc.sql("UPDATE banking.holds SET amount=1 WHERE id=:id").param("id", UUID.fromString(id)).update()).isInstanceOf(Exception.class);
+    }
+
+    @Test
+    void failedPlacementDoesNotConsumeKeyAndNumericAmountsAreRejected() throws Exception {
+        var source = provisioned(); var destination = provisioned();
+        String key = UUID.randomUUID().toString(), expiry = Instant.now().plusSeconds(600).toString();
+        problem(placeHold(source, destination, "60", expiry, key), 422, "LEDGER_INSUFFICIENT_FUNDS");
+        credit(source, "100");
+        assertThat(placeHold(source, destination, "60", expiry, key).statusCode()).isEqualTo(201);
+        problem(placeHold(source, destination, "1", Instant.now().minusSeconds(10).toString(), UUID.randomUUID().toString()), 422, "HOLD_EXPIRY_INVALID");
+        var absent = new Owner("absent", "", UUID.randomUUID(), null);
+        problem(placeHold(source, absent, "1", expiry, UUID.randomUUID().toString()), 404, "ACCOUNT_NOT_FOUND");
+        var body = "{\"accountId\":\""+source.accountId()+"\",\"destinationAccountId\":\""+destination.accountId()+"\",\"amount\":1,\"expiresAt\":\""+expiry+"\"}";
+        assertThat(holdRequest(body, source.token(), UUID.randomUUID().toString()).statusCode()).isEqualTo(400);
+    }
+
+    @Test
+    void duplicateAndOppositeReservationsDoNotDeadlock() throws Exception {
+        var a = provisioned(); var b = provisioned(); credit(a, "100"); credit(b, "100");
+        String expiry = Instant.now().plusSeconds(600).toString(), key = UUID.randomUUID().toString();
+        var duplicates = concurrent(8, () -> placeHold(a, b, "10", expiry, key));
+        assertThat(duplicates).allSatisfy(r -> assertThat(r.statusCode()).as(r.body()).isEqualTo(201));
+        assertThat(duplicates.stream().map(r -> tree(r).path("id").asString()).distinct().count()).isEqualTo(1);
+        var direction = new AtomicInteger();
+        var opposite = concurrent(8, () -> direction.getAndIncrement()%2==0
+                ? placeHold(a, b, "10", expiry, UUID.randomUUID().toString())
+                : placeHold(b, a, "10", expiry, UUID.randomUUID().toString()));
+        assertThat(opposite).allSatisfy(r -> assertThat(r.statusCode()).as(r.body()).isEqualTo(201));
+        assertBalances(a, "100", "50", "50"); assertBalances(b, "100", "40", "60");
+    }
+
+    @Test
+    void captureAndReleaseRaceHasOnlyOneTerminalEffect() throws Exception {
+        var a = provisioned(); var b = provisioned(); credit(a, "100");
+        String id = tree(placeHold(a, b, "60", Instant.now().plusSeconds(600).toString(), UUID.randomUUID().toString())).path("id").asString();
+        var direction = new AtomicInteger();
+        var replies = concurrent(8, () -> holdAction(a, id, direction.getAndIncrement()%2==0 ? "capture" : "release"));
+        assertThat(replies).allSatisfy(r -> assertThat(r.statusCode()).as(r.body()).isIn(200,409));
+        var state = tree(call("GET", "/api/v1/holds/"+id, a.token(), null)).path("state").asString();
+        if (state.equals("CAPTURED")) {
+            assertBalances(a, "40", "0", "40"); assertBalances(b, "60", "0", "60");
+            assertThat(journalCount(UUID.fromString(id))).isEqualTo(1);
+        } else {
+            assertThat(state).isEqualTo("RELEASED");
+            assertBalances(a, "100", "0", "100"); assertBalances(b, "0", "0", "0");
+            assertThat(journalCount(UUID.fromString(id))).isZero();
+        }
+    }
+
+    @Test
+    void transferFeeAndGrossDailyLimitAreAtomicAndReplayDoesNotChargeAgain() throws Exception {
+        var a=provisioned(); var b=provisioned(); credit(a,"200"); policy(a,"100","100","2","Asia/Ho_Chi_Minh");
+        String key=UUID.randomUUID().toString();
+        var first=transfer(a,b,"30",key); assertThat(first.statusCode()).as(first.body()).isEqualTo(201);
+        var journal=tree(first).path("journalId").asString();
+        assertThat(tree(transfer(a,b,"30",key))).isEqualTo(tree(first));
+        var assessment=call("GET",chargePath(a,journal),a.token(),null);
+        assertThat(assessment.statusCode()).isEqualTo(200);
+        assertThat(tree(assessment).path("feeAmount").asString()).isEqualTo("2");
+        assertThat(tree(assessment).path("totalDebit").asString()).isEqualTo("32");
+        assertBalances(a,"168","0","168"); assertBalances(b,"30","0","30");
+        assertThat(transfer(a,b,"66",UUID.randomUUID().toString()).statusCode()).isEqualTo(201);
+        problem(transfer(a,b,"1",UUID.randomUUID().toString()),422,"TRANSFER_DAILY_LIMIT");
+        assertBalances(a,"100","0","100"); assertBalances(b,"96","0","96");
+        problem(call("GET",chargePath(a,journal),b.token(),null),404,"ACCOUNT_NOT_FOUND");
+        problem(call("GET",chargePath(a,journal),operator(),null),403,"ACCESS_DENIED");
+        // Completed receipts keep the original fee snapshot when policy changes.
+        jdbc.sql("UPDATE banking.outgoing_policies SET fee=3 WHERE account_id=:id").param("id",a.accountId()).update();
+        assertThat(tree(transfer(a,b,"30",key))).isEqualTo(tree(first));
+        assertThat(tree(call("GET",chargePath(a,journal),a.token(),null))).isEqualTo(tree(assessment));
+    }
+
+    @Test
+    void concurrentGrossDebitsCannotExceedDailyLimit() throws Exception {
+        var a=provisioned(); var b=provisioned(); credit(a,"500"); policy(a,"100","100","2","Asia/Ho_Chi_Minh");
+        var replies=concurrent(8,()->transfer(a,b,"30",UUID.randomUUID().toString()));
+        assertThat(replies.stream().filter(r->r.statusCode()==201).count()).isEqualTo(3);
+        assertThat(replies.stream().filter(r->r.statusCode()==422).count()).isEqualTo(5);
+        assertBalances(a,"404","0","404"); assertBalances(b,"90","0","90");
+        assertThat(jdbc.sql("SELECT sum(amount+fee) FROM banking.outgoing_charges WHERE account_id=:id").param("id",a.accountId()).query(BigDecimal.class).single()).isEqualByComparingTo("96");
+    }
+
+    @Test
+    void feeOrAssessmentFailureRollsBackPrincipalAndPreservesKeyForRetry() throws Exception {
+        var a=provisioned(); var b=provisioned(); credit(a,"30"); policy(a,"100","100","2","Asia/Ho_Chi_Minh");
+        String key=UUID.randomUUID().toString();
+        problem(transfer(a,b,"30",key),422,"LEDGER_INSUFFICIENT_FUNDS");
+        assertBalances(a,"30","0","30"); assertBalances(b,"0","0","0");
+        credit(a,"10");
+        jdbc.sql("ALTER TABLE banking.outgoing_charges ADD CONSTRAINT test_charge_failure CHECK(account_id<>'"+a.accountId()+"'::uuid)").update();
+        try {
+            problem(transfer(a,b,"30",key),500,"INTERNAL_ERROR");
+            assertBalances(a,"40","0","40"); assertBalances(b,"0","0","0");
+        } finally { jdbc.sql("ALTER TABLE banking.outgoing_charges DROP CONSTRAINT test_charge_failure").update(); }
+        assertThat(transfer(a,b,"30",key).statusCode()).isEqualTo(201);
+        assertBalances(a,"8","0","8");
+        assertThat(jdbc.sql("SELECT count(*) FROM banking.outgoing_charges WHERE account_id=:id").param("id",a.accountId()).query(Long.class).single()).isEqualTo(1);
+    }
+
+    @Test
+    void holdCaptureUsesGrossLimitsAndRequiresAvailableFeeOutsideTheHold() throws Exception {
+        var a=provisioned(); var b=provisioned(); credit(a,"60"); policy(a,"61","100","2","Asia/Ho_Chi_Minh");
+        String id=tree(placeHold(a,b,"60",Instant.now().plusSeconds(600).toString(),UUID.randomUUID().toString())).path("id").asString();
+        problem(holdAction(a,id,"capture"),422,"TRANSFER_TRANSACTION_LIMIT");
+        assertBalances(a,"60","60","0");
+        jdbc.sql("UPDATE banking.outgoing_policies SET transaction_limit=100 WHERE account_id=:id").param("id",a.accountId()).update();
+        problem(holdAction(a,id,"capture"),422,"LEDGER_INSUFFICIENT_FUNDS");
+        assertBalances(a,"60","60","0");
+        credit(a,"2");
+        var capture=holdAction(a,id,"capture"); assertThat(capture.statusCode()).as(capture.body()).isEqualTo(200);
+        assertThat(tree(holdAction(a,id,"capture"))).isEqualTo(tree(capture));
+        assertBalances(a,"0","0","0"); assertBalances(b,"60","0","60");
+    }
+
+    @Test
+    void databaseRejectsPolicyBypassAndAssessmentMutation() throws Exception {
+        var a=provisioned(); var b=provisioned(); credit(a,"100"); policy(a,"50","50","2","Asia/Ho_Chi_Minh");
+        // Even a raw posted principal cannot commit without the configured assessment.
+        assertThatThrownBy(()->tx().execute(s->{
+            UUID journal=UUID.randomUUID();
+            jdbc.sql("INSERT INTO banking.ledger_journals(id,reference_id,kind,currency,status,actor_issuer,actor_subject,created_at) VALUES(:id,:ref,'INTERNAL_TRANSFER','VND','DRAFT','sql-fixture','sql-fixture',now())")
+                    .param("id",journal).param("ref",UUID.randomUUID()).update();
+            insertLine(journal,a.ledgerId(),"DEBIT","10"); insertLine(journal,b.ledgerId(),"CREDIT","10"); finish(journal); return null;
+        })).isInstanceOf(Exception.class);
+        var first=transfer(a,b,"10",UUID.randomUUID().toString()); assertThat(first.statusCode()).isEqualTo(201);
+        var journal=UUID.fromString(tree(first).path("journalId").asString());
+        assertThatThrownBy(()->jdbc.sql("UPDATE banking.outgoing_charges SET fee=0 WHERE journal_id=:id").param("id",journal).update()).isInstanceOf(Exception.class);
+        assertThatThrownBy(()->jdbc.sql("UPDATE banking.outgoing_policies SET timezone='UTC' WHERE account_id=:id").param("id",a.accountId()).update()).isInstanceOf(Exception.class);
+        assertThatThrownBy(()->jdbc.sql("UPDATE banking.outgoing_policies SET fee=-1 WHERE account_id=:id").param("id",a.accountId()).update()).isInstanceOf(Exception.class);
+        assertBalances(a,"88","0","88"); assertBalances(b,"10","0","10");
+    }
+
+    @Test
+    void policyDateUsesDatabaseJournalTimeAndLocalMidnight() throws Exception {
+        var a=provisioned(); credit(a,"1");
+        // Deterministic journal fixture crosses the UTC+7 business-day boundary by one microsecond.
+        tx().execute(s->{
+            for (String instant:List.of("2026-11-01T16:59:59.999999Z","2026-11-01T17:00:00Z")) {
+                UUID journal=UUID.randomUUID();
+                jdbc.sql("INSERT INTO banking.ledger_journals(id,reference_id,kind,currency,status,actor_issuer,actor_subject,created_at) VALUES(:id,:ref,'ADJUSTMENT','VND','DRAFT','sql-fixture','sql-fixture',:time)")
+                        .param("id",journal).param("ref",UUID.randomUUID()).param("time",java.sql.Timestamp.from(Instant.parse(instant))).update();
+                insertLine(journal,CLEARING,"DEBIT","1"); insertLine(journal,a.ledgerId(),"CREDIT","1");
+                jdbc.sql("UPDATE banking.ledger_journals SET status='POSTED',posted_at=created_at WHERE id=:id").param("id",journal).update();
+                String date=outgoing.businessDate(journal,"Asia/Ho_Chi_Minh").toString();
+                assertThat(date).isEqualTo(instant.contains("16:59")?"2026-11-01":"2026-11-02");
+            }
+            return null;
+        });
+    }
+
+    @Test
+    void priorBusinessDayUsageDoesNotConsumeTodaysLimit() throws Exception {
+        var a=provisioned(); var b=provisioned(); credit(a,"200"); policy(a,"100","50","0","Asia/Ho_Chi_Minh");
+        tx().execute(s->{
+            UUID journal=UUID.randomUUID();
+            jdbc.sql("INSERT INTO banking.ledger_journals(id,reference_id,kind,currency,status,actor_issuer,actor_subject,created_at) VALUES(:id,:ref,'INTERNAL_TRANSFER','VND','DRAFT','sql-fixture','sql-fixture',now()-interval '2 days')")
+                    .param("id",journal).param("ref",UUID.randomUUID()).update();
+            insertLine(journal,a.ledgerId(),"DEBIT","50"); insertLine(journal,b.ledgerId(),"CREDIT","50");
+            jdbc.sql("UPDATE banking.ledger_journals SET status='POSTED',posted_at=created_at WHERE id=:id").param("id",journal).update();
+            outgoing.record(a.accountId(),journal,new BigDecimal("50"),outgoing.policy(a.accountId()),outgoing.businessDate(journal,"Asia/Ho_Chi_Minh"),null);
+            return null;
+        });
+        assertThat(transfer(a,b,"30",UUID.randomUUID().toString()).statusCode()).isEqualTo(201);
+        problem(transfer(a,b,"30",UUID.randomUUID().toString()),422,"TRANSFER_DAILY_LIMIT");
+        assertBalances(a,"120","0","120"); assertBalances(b,"80","0","80");
+    }
+
+    @Test
+    void principalReversalRetainsFeeAndDailyUsage() throws Exception {
+        var a=provisioned(); var b=provisioned(); credit(a,"100"); policy(a,"32","32","2","Asia/Ho_Chi_Minh");
+        var original=transfer(a,b,"30",UUID.randomUUID().toString()); assertThat(original.statusCode()).isEqualTo(201);
+        String body="{\"originalJournalId\":\""+tree(original).path("journalId").asString()+"\",\"reason\":\"OPERATOR_ERROR\"}";
+        var reversal=http.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/operations/reversals"))
+                .header("Authorization","Bearer "+operator()).header("Idempotency-Key",UUID.randomUUID().toString()).header("Content-Type","application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
+        assertThat(reversal.statusCode()).as(reversal.body()).isEqualTo(201);
+        assertBalances(a,"98","0","98"); assertBalances(b,"0","0","0");
+        problem(transfer(a,b,"1",UUID.randomUUID().toString()),422,"TRANSFER_DAILY_LIMIT");
+    }
+
+    private void policy(Owner a,String transaction,String daily,String fee,String zone) {
+        jdbc.sql("INSERT INTO banking.outgoing_policies(account_id,transaction_limit,daily_limit,fee,timezone) VALUES(:id,:tx,:daily,:fee,:zone)")
+                .param("id",a.accountId()).param("tx",new BigDecimal(transaction)).param("daily",new BigDecimal(daily)).param("fee",new BigDecimal(fee)).param("zone",zone).update();
+    }
+
+    private HttpResponse<String> transfer(Owner a,Owner b,String amount,String key) throws Exception {
+        String body="{\"sourceAccountId\":\""+a.accountId()+"\",\"destinationAccountId\":\""+b.accountId()+"\",\"amount\":\""+amount+"\",\"currency\":\"VND\"}";
+        return http.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/transfers"))
+                .header("Authorization","Bearer "+a.token()).header("Idempotency-Key",key).header("Content-Type","application/json")
+                .header("X-Correlation-ID","ledger-006").POST(HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static String chargePath(Owner a,String journal) { return "/api/v1/ledger/accounts/"+a.accountId()+"/outgoing-charges/"+journal; }
+
+    private HttpResponse<String> placeHold(Owner source, Owner destination, String amount, String expiry, String key) throws Exception {
+        return holdRequest("{\"accountId\":\""+source.accountId()+"\",\"destinationAccountId\":\""+destination.accountId()+"\",\"amount\":\""+amount+"\",\"expiresAt\":\""+expiry+"\"}", source.token(), key);
+    }
+
+    private HttpResponse<String> holdRequest(String body, String token, String key) throws Exception {
+        return http.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/holds"))
+                .header("Authorization", "Bearer "+token).header("Content-Type", "application/json")
+                .header("Idempotency-Key", key).header("X-Correlation-ID", "ledger-006")
+                .POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> holdAction(Owner owner, String id, String action) throws Exception {
+        return call("POST", "/api/v1/holds/"+id+"/"+action, owner.token(), null);
+    }
+
+    private void assertBalances(Owner owner, String posted, String reserved, String available) throws Exception {
+        var b = tree(balanceHttp(owner));
+        assertThat(b.path("postedBalance").asString()).isEqualTo(posted);
+        assertThat(b.path("reservedBalance").asString()).isEqualTo(reserved);
+        assertThat(b.path("availableBalance").asString()).isEqualTo(available);
     }
 
     private Owner opened() throws Exception {

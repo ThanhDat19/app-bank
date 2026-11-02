@@ -27,11 +27,11 @@ public class TransferController {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "createInternalTransfer", summary = "Transfer VND from your account or replay its receipt",
-            description = "Both accounts must be distinct, ACTIVE and provisioned. Source ownership and balances are checked under ordered locks. Key scoped to verified issuer/subject and transfer operation, retained indefinitely. Same key/payload returns original receipt (also 201), changed valid payload returns 409. No fee or automatic provisioning.")
+            description = "Both accounts must be distinct, ACTIVE and provisioned. Source ownership, available balance and configured gross transaction/daily limits are checked under ordered locks. Any configured flat VND fee commits atomically with principal. Fee defaults to zero. Read /api/v1/ledger/accounts/{sourceAccountId}/outgoing-charges/{journalId} for the immutable fee snapshot. Key scoped to verified issuer/subject, retained indefinitely. Same key/payload returns original receipt (201) without another fee or daily usage; changed payload returns 409. No automatic provisioning.")
     @ApiResponse(responseCode = "201", description = "Immutable POSTED receipt; Location supports lookup after a lost response")
     @ApiResponse(responseCode = "404", description = "ACCOUNT_NOT_FOUND, including a source account outside ownership scope")
     @ApiResponse(responseCode = "409", description = "IDEMPOTENCY_CONFLICT or ACCOUNT_STATE_INVALID")
-    @ApiResponse(responseCode = "422", description = "TRANSFER_ACCOUNTS_INVALID, LEDGER_NOT_PROVISIONED, LEDGER_LINK_INCONSISTENT, LEDGER_INSUFFICIENT_FUNDS or LEDGER_BALANCE_LIMIT")
+    @ApiResponse(responseCode = "422", description = "TRANSFER_TRANSACTION_LIMIT, TRANSFER_DAILY_LIMIT, TRANSFER_ACCOUNTS_INVALID, LEDGER_NOT_PROVISIONED, LEDGER_LINK_INCONSISTENT, LEDGER_INSUFFICIENT_FUNDS or LEDGER_BALANCE_LIMIT")
     public ResponseEntity<TransferReceipt> create(
             @RequestHeader("Idempotency-Key") @Pattern(regexp = "[A-Za-z0-9._:-]{1,128}")
             @Parameter(description = "Reuse exactly this key and payload after timeout. A new key creates a new transfer.",

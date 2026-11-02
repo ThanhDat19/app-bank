@@ -28,11 +28,13 @@ public class LedgerPostingService {
     private final LedgerRepository ledger;
     private final AccountFinancialAccess accounts;
     private final CurrentActorProvider actors;
+    private final HoldRepository holds;
 
-    public LedgerPostingService(LedgerRepository ledger, AccountFinancialAccess accounts, CurrentActorProvider actors) {
+    public LedgerPostingService(LedgerRepository ledger, AccountFinancialAccess accounts, CurrentActorProvider actors, HoldRepository holds) {
         this.ledger = ledger;
         this.accounts = accounts;
         this.actors = actors;
+        this.holds = holds;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -73,7 +75,7 @@ public class LedgerPostingService {
                         .map(line -> line.side().name().equals(account.normalSide()) ? line.amount() : line.amount().negate())
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                 var resulting = ledger.balance(account.id()).add(delta);
-                if (resulting.signum() < 0) {
+                if (resulting.subtract(holds.reserved(account.bankAccountId())).signum() < 0) {
                     throw new BusinessException("LEDGER_INSUFFICIENT_FUNDS", RULE_VIOLATION);
                 }
                 if (resulting.compareTo(JournalPlan.MAX_AMOUNT) > 0) {

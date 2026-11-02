@@ -27,6 +27,8 @@ public interface LedgerRepository {
 
     BigDecimal balance(UUID ledgerId);
 
+    LedgerQueryService.Balance balanceSnapshot(UUID accountId, UUID ledgerId, String currency);
+
     boolean referenceExists(UUID referenceId);
 
     Optional<Journal> lockJournal(UUID journalId);

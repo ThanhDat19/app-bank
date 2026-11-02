@@ -32,6 +32,10 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 
 ## Tài liệu dự án
 
+- [Tình trạng dự án và tiến độ đã đối chiếu](docs/project/status.md)
+- [BL-011a: Holds và số dư khả dụng](docs/api/holds.md)
+- [BL-011b: Hạn mức theo ngày và phí nguyên tử](docs/api/outgoing-policy.md)
+
 - [Đánh giá thiết kế và repository mẫu](docs/architecture/design-review.md)
 - [ADR-001: Ranh giới core và các giao thức](docs/architecture/ADR-001-core-boundary.md)
 - [ADR-002: Nền tảng, migrations, Swagger và kiểm thử](docs/architecture/ADR-002-platform-baseline.md)
@@ -75,8 +79,10 @@ BL-006 thêm Ledger VND bất biến, internal posting contract, API liên kết
 Account đã provision chỉ đóng khi posted balance bằng 0.
 BL-007 thêm OPERATOR cash-in mô phỏng, request hash/key và receipt bền vững cùng transaction với Ledger;
 retry cùng key/payload không tạo tiền lần hai. BL-008 thêm CUSTOMER chuyển VND nội bộ với source ownership,
-ordered pair locks, no overspend và receipt/idempotency nguyên tử. Chưa có available balance.
+ordered pair locks, no overspend và receipt/idempotency nguyên tử.
 BL-009/010 bổ sung concurrency/lost-response recovery và OPERATOR full reversal một lần bằng journal mới;
 original bất biến, giữ điều kiện ACTIVE và đủ số dư.
+BL-011 trên nhánh triển khai bổ sung holds/available balance, hạn mức gross theo ngày/múi giờ và phí VND
+ghi nguyên tử cùng chuyển tiền/capture. Mặc định phí 0; policy riêng theo account nguồn dùng cho mô phỏng.
 Chỉ dùng dữ liệu tổng hợp; dự án chưa có chứng nhận
 nghiệp vụ, an ninh hay vận hành cho ngân hàng thực tế.
