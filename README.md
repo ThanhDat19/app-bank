@@ -32,6 +32,10 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 
 ## Tài liệu dự án
 
+- [BL-013: Kafka và notifications](docs/architecture/ADR-006-kafka-notifications.md)
+- [BL-013: API thông báo](docs/api/notifications.md)
+- [BL-013: Local Kafka và recovery](docs/development/local-messaging.md)
+
 - [BL-012: Transactional outbox và delivery guarantees](docs/architecture/ADR-005-transactional-outbox.md)
 - [BL-012: Cấu hình relay, kiểm tra và recovery](docs/development/local-outbox.md)
 

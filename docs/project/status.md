@@ -4,8 +4,8 @@
 
 GitHub đã xác nhận [PR #21](https://github.com/ThanhDat19/app-bank/pull/21) (BL-008) và
 [PR #23](https://github.com/ThanhDat19/app-bank/pull/23) (BL-009/010) được owner merge ngày 02/11/2026.
-PR #24 (BL-011) cũng đã được owner merge ngày 02/11/2026. Main hiện ở `aa58fd8`;
-local main đã fast-forward trước khi tạo nhánh BL-012. Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
+PR #24 (BL-011) và #26 (BL-012) cũng đã được owner merge ngày 02/11/2026. Main hiện ở `ae859cc`;
+local main đã đồng bộ trước khi tạo nhánh BL-013. Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
 
 | Phần | Tình trạng |
 | --- | --- |
@@ -13,8 +13,9 @@ local main đã fast-forward trước khi tạo nhánh BL-012. Các ghi chú “
 | BL-004–006 | Customer/KYC, account lifecycle, immutable double-entry ledger đã có trên main |
 | BL-007–010 | Idempotent cash-in/transfer, concurrency/recovery, full reversal đã merge |
 | BL-011 | Holds/available balance/limits/fees đã merge PR #24; local 286 tests và CI PASS |
-| BL-012 | Issue #25, `feat/BL-012-transactional-outbox` từ main aa58fd8; journal events/leased relay đã triển khai, local 299 tests PASS; chờ PR/CI và owner review |
-| BL-013 trở đi | Kafka/reconciliation/history/external payments/operations theo roadmap |
+| BL-012 | Issue #25 / PR #26 đã merge; local 299 tests và GitHub CI PASS |
+| BL-013 | Issue #27, `feat/BL-013-kafka-notifications` từ main ae859cc; Kafka + durable in-app notifications đã triển khai, local 313 tests PASS; chờ PR/CI và owner review |
+| BL-014 trở đi | Reconciliation/history/external payments/operations theo roadmap |
 
 Roadmap là thứ tự dependency, lịch sprint ban đầu chưa được re-estimate. Số lượng tác vụ có mã nguồn
 không đồng nghĩa chứng nhận vận hành. Cloud/Analytics addendum vẫn là draft, không thay roadmap chính.
@@ -80,3 +81,14 @@ V10 auto event nguyên tử cùng POSTED journal, immutable envelope + delivery 
 default relay off và không fake transport. Local full clean verify **299/299 PASS** (80 unit + 219 integration),
 0 failures/errors/skipped. [Review/evidence](../reviews/BL-012.md).
 GitHub PR/CI là bước bàn giao tiếp theo; trạng thái live xem issue #25/PR liên kết.
+
+## BL-013 — Kafka và notifications
+
+BL-012 đã merge PR #26; task mới có issue #27 và feature branch từ main cập nhật.
+Kafka producer ACK trước outbox completion; consumer inbox chống trùng, notification commit trước offset,
+durable retry/backoff và sanitized Kafka DLQ/quarantine. CUSTOMER đọc bounded notifications theo ownership.
+Kafka/relay mặc định tắt, không email/SMS, không thay đổi số dư từ event.
+Local full clean verify **313/313 PASS** (82 unit/web/architecture + 231 integration), 0 failures/errors/skipped;
+có Kafka/PostgreSQL thật, broker interruption/recovery, consumer restart, public transfer cho cả sender/recipient.
+[Review/evidence](../reviews/BL-013.md). Bàn giao gồm code/tests và docs commits, push và Draft PR liên kết issue #27;
+trạng thái live PR/CI được ghi trên GitHub. Không tự approve/merge hoặc migrate bank_lab local.
