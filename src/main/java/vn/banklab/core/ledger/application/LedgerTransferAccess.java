@@ -16,11 +16,13 @@ public class LedgerTransferAccess {
     private final AccountFinancialAccess accounts;
     private final LedgerRepository ledger;
     private final LedgerPostingService posting;
+    private final OutgoingPolicyService policies;
 
-    public LedgerTransferAccess(AccountFinancialAccess accounts, LedgerRepository ledger, LedgerPostingService posting) {
+    public LedgerTransferAccess(AccountFinancialAccess accounts, LedgerRepository ledger, LedgerPostingService posting, OutgoingPolicyService policies) {
         this.accounts = accounts;
         this.ledger = ledger;
         this.posting = posting;
+        this.policies = policies;
     }
 
     @PreAuthorize("hasRole('CUSTOMER')")
@@ -39,8 +41,10 @@ public class LedgerTransferAccess {
         }).toList();
         var source = links.stream().filter(a -> a.bankAccountId().equals(sourceId)).findFirst().orElseThrow();
         var destination = links.stream().filter(a -> a.bankAccountId().equals(destinationId)).findFirst().orElseThrow();
-        return posting.post(new LedgerPostingCommand(referenceId, LedgerPostingCommand.Kind.INTERNAL_TRANSFER, List.of(
+        UUID journal = posting.post(new LedgerPostingCommand(referenceId, LedgerPostingCommand.Kind.INTERNAL_TRANSFER, List.of(
                 new LedgerPostingCommand.Posting(source.id(), LedgerPostingCommand.Side.DEBIT, amount),
                 new LedgerPostingCommand.Posting(destination.id(), LedgerPostingCommand.Side.CREDIT, amount))));
+        policies.assess(sourceId,source.id(),journal,amount);
+        return journal;
     }
 }

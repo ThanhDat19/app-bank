@@ -40,7 +40,7 @@ public class LedgerController {
 
     @GetMapping("/{accountId}/balance")
     @Operation(operationId = "getMyPostedBalance", summary = "Get your authoritative posted ledger balance",
-            description = "Derived from POSTED entries. No available balance is claimed until holds are implemented.")
+            description = "Posted balance from immutable entries; reserved balance from unexpired ACTIVE holds; available = posted minus reserved. Amounts are exact VND strings.")
     @ApiResponse(responseCode = "200", description = "Posted balance in VND minor units")
     @ApiResponse(responseCode = "404", description = "ACCOUNT_NOT_FOUND within ownership scope")
     @ApiResponse(responseCode = "422", description = "LEDGER_NOT_PROVISIONED or LEDGER_LINK_INCONSISTENT")

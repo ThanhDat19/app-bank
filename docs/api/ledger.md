@@ -1,5 +1,8 @@
 # BL-006 — Ledger foundation
 
+BL-011 mở rộng response balance thêm `reservedBalance`/`availableBalance` dạng string.
+Xem [holds](holds.md) và [hạn mức/phí](outgoing-policy.md) cho contract hiện tại; các mô tả BL-006 bên dưới là baseline ban đầu.
+
 ## Actors và business rules
 
 CUSTOMER có account ACTIVE được provision Ledger và xem balance của mình. OPERATOR xem balance

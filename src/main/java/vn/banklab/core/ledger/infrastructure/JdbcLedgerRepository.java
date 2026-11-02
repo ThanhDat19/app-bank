@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import vn.banklab.core.iam.application.Actor;
 import vn.banklab.core.ledger.application.LedgerPostingCommand;
 import vn.banklab.core.ledger.application.LedgerRepository;
+import vn.banklab.core.ledger.application.LedgerQueryService;
 import vn.banklab.core.ledger.domain.JournalPlan;
 
 @Repository
@@ -55,6 +56,22 @@ public class JdbcLedgerRepository implements LedgerRepository {
     @Override
     public BigDecimal balance(UUID id) {
         return jdbc.sql("SELECT banking.ledger_balance(:id)").param("id", id).query(BigDecimal.class).single();
+    }
+
+    @Override
+    public LedgerQueryService.Balance balanceSnapshot(UUID accountId, UUID ledgerId, String currency) {
+        return jdbc.sql("""
+                SELECT (SELECT COALESCE(sum(CASE WHEN p.side=l.normal_side THEN p.amount ELSE -p.amount END),0)
+                        FROM banking.ledger_postings p JOIN banking.ledger_accounts l ON l.id=p.ledger_account_id
+                        JOIN banking.ledger_journals j ON j.id=p.journal_id WHERE l.id=:ledger AND j.status='POSTED') AS posted,
+                       (SELECT COALESCE(sum(amount),0) FROM banking.holds
+                        WHERE account_id=:account AND state='ACTIVE' AND expires_at>statement_timestamp()) AS reserved
+                """)
+                .param("ledger", ledgerId).param("account", accountId).query((r, n) -> {
+                    var posted = r.getBigDecimal("posted");
+                    var reserved = r.getBigDecimal("reserved");
+                    return new LedgerQueryService.Balance(accountId, currency, posted, reserved, posted.subtract(reserved));
+                }).single();
     }
 
     @Override

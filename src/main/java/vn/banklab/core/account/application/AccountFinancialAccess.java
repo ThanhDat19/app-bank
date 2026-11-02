@@ -75,6 +75,13 @@ public class AccountFinancialAccess {
         return reference(accounts.findOwned(id, customerId, false).orElseThrow(AccountFinancialAccess::notFound));
     }
 
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Reference lockForReservationRelease(UUID id) {
+        var customerId = customers.ownedCustomerId().orElseThrow(AccountFinancialAccess::notFound);
+        return reference(accounts.findOwned(id, customerId, true).orElseThrow(AccountFinancialAccess::notFound));
+    }
+
     @PreAuthorize("hasRole('OPERATOR')")
     @Transactional(readOnly = true)
     public Reference forOperations(UUID id) {
