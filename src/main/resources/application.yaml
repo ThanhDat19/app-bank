@@ -17,9 +17,13 @@ spring:
       mode: never
 
 bank:
+  kafka:
+    enabled: ${KAFKA_ENABLED:false}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
   outbox:
     relay:
       enabled: ${OUTBOX_RELAY_ENABLED:false}
+      batch-size: 1
   iam:
     issuer-uri: ${OIDC_ISSUER_URI}
     jwk-set-uri: ${OIDC_JWK_SET_URI}
