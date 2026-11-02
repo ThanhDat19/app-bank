@@ -4,6 +4,8 @@
 
 CUSTOMER có account ACTIVE được provision Ledger và xem balance của mình. OPERATOR xem balance
 qua operations route. BL-006 không có REST ghi tiền; BL-007 bổ sung [cash-in mô phỏng có idempotency](cash-in.md).
+BL-008 thêm [internal transfer](internal-transfer.md); BL-010 thêm [full reversal](reversal.md).
+Từ V7, internal posting kind REVERSAL cũng bắt buộc receipt hợp lệ cùng transaction, không standalone journal.
 
 | Rule | Điều kiện | Bảo vệ/test |
 | --- | --- | --- |

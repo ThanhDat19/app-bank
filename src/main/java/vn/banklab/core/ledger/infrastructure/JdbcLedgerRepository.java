@@ -63,6 +63,21 @@ public class JdbcLedgerRepository implements LedgerRepository {
     }
 
     @Override
+    public Optional<Journal> lockJournal(UUID id) {
+        // Compatible with FK KEY SHARE. FOR UPDATE can deadlock competing reversal claims.
+        return jdbc.sql("SELECT id,kind,status FROM banking.ledger_journals WHERE id=:id FOR NO KEY UPDATE")
+                .param("id", id).query((row, index) -> new Journal(row.getObject("id", UUID.class),
+                        LedgerPostingCommand.Kind.valueOf(row.getString("kind")), row.getString("status"))).optional();
+    }
+
+    @Override
+    public List<LedgerPostingCommand.Posting> postings(UUID id) {
+        return jdbc.sql("SELECT ledger_account_id,side,amount FROM banking.ledger_postings WHERE journal_id=:id ORDER BY id")
+                .param("id", id).query((row, index) -> new LedgerPostingCommand.Posting(row.getObject("ledger_account_id", UUID.class),
+                        LedgerPostingCommand.Side.valueOf(row.getString("side")), row.getBigDecimal("amount"))).list();
+    }
+
+    @Override
     public void insertJournal(UUID id, LedgerPostingCommand command, Actor actor, Instant now) {
         jdbc.sql("""
                         INSERT INTO banking.ledger_journals (id,reference_id,kind,currency,status,actor_issuer,actor_subject,created_at)

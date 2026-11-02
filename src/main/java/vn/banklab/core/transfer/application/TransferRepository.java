@@ -11,4 +11,6 @@ public interface TransferRepository {
     Claim claim(Actor actor, String key, String hash, UUID sourceId, UUID destinationId, BigDecimal amount);
     TransferReceipt complete(UUID id, UUID journalId);
     Optional<TransferReceipt> findOwned(UUID id, Actor actor);
+
+    boolean hasPostedJournal(UUID journalId);
 }

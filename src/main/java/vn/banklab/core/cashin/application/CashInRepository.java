@@ -13,4 +13,6 @@ public interface CashInRepository {
     CashInReceipt complete(UUID id, UUID journalId);
 
     Optional<CashInReceipt> findOwned(UUID id, Actor actor);
+
+    boolean hasPostedJournal(UUID journalId);
 }

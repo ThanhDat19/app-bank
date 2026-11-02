@@ -56,6 +56,13 @@ public class TransferService {
                 new BusinessException("TRANSFER_NOT_FOUND", BusinessException.Kind.NOT_FOUND));
     }
 
+    /** Internal operator reversal eligibility; sender-only HTTP lookup remains unchanged. */
+    @PreAuthorize("hasRole('OPERATOR')")
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public boolean hasPostedJournal(UUID id) {
+        return transfers.hasPostedJournal(id);
+    }
+
     private static String hash(String value) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
