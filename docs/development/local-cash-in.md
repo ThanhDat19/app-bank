@@ -21,7 +21,8 @@ V5 được Flyway áp dụng khi ứng dụng khởi động; không cần rese
 10. Thử amount number `500000`, `"1.5"`, `"0"`, currency USD, thiếu key: 400, không phát sinh tiền.
 
 Không thể close account có balance khác 0. BL-007 chưa có rút tiền/reversal: không sửa/xóa postings hoặc receipt
-để đưa balance về 0. Dùng account mô phỏng mới cho demo closure, hoặc đợi use case reversal tương ứng.
+để đưa balance về 0. Sau BL-008, owner có thể [chuyển tiền nội bộ](local-internal-transfer.md) sang một account
+ACTIVE/provisioned khác để source balance về 0 rồi close; đây là transfer mới, không phải reversal.
 Provision đã có thể thực hiện bởi owner ở BL-006; OPERATOR cash-in không provision thay CUSTOMER.
 
 HTTP/Swagger contract và các mã lỗi đầy đủ tại [đặc tả cash-in](../api/cash-in.md).
