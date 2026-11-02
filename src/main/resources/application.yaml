@@ -17,6 +17,9 @@ spring:
       mode: never
 
 bank:
+  outbox:
+    relay:
+      enabled: ${OUTBOX_RELAY_ENABLED:false}
   iam:
     issuer-uri: ${OIDC_ISSUER_URI}
     jwk-set-uri: ${OIDC_JWK_SET_URI}

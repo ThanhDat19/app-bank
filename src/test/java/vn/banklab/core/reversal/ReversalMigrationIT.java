@@ -31,7 +31,7 @@ class ReversalMigrationIT {
             c.commit();
         }
         var flyway = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(3);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = connection(); var s = c.createStatement(); var r = s.executeQuery("SELECT banking.ledger_balance('" + la + "'),banking.ledger_balance('" + lb + "'),(SELECT count(*) FROM banking.reversals),(SELECT amount FROM banking.transfers WHERE id='" + transferReceipt + "')")) {
             assertThat(r.next()).isTrue(); assertThat(r.getBigDecimal(1)).isEqualByComparingTo("60");
