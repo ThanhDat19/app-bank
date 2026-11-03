@@ -17,7 +17,7 @@ class OutboxMigrationIT {
         UUID old=UUID.randomUUID();
         try(var c=connection()) { post(c,old); }
         var flyway=Flyway.configure().dataSource(POSTGRES.getJdbcUrl(),POSTGRES.getUsername(),POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4); assertThat(flyway.migrate().migrationsExecuted).isZero();
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(5); assertThat(flyway.migrate().migrationsExecuted).isZero();
         try(var c=connection();var s=c.createStatement()) {
             try(var r=s.executeQuery("SELECT (SELECT count(*) FROM banking.outbox_events),(SELECT count(*) FROM banking.outbox_deliveries),banking.ledger_balance('00000000-0000-0000-0000-000000000001')")) {
                 assertThat(r.next()).isTrue(); assertThat(r.getLong(1)).isZero(); assertThat(r.getLong(2)).isZero(); assertThat(r.getBigDecimal(3)).isEqualByComparingTo("1");

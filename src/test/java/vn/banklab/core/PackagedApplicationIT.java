@@ -37,6 +37,7 @@ class PackagedApplicationIT {
             assertThat(jar.getJarEntry("BOOT-INF/classes/db/migration/V11__create_durable_notification_inbox.sql")).isNotNull();
             assertThat(jar.getJarEntry("BOOT-INF/classes/db/migration/V12__create_reconciliation_reports_and_audit.sql")).isNotNull();
             assertThat(jar.getJarEntry("BOOT-INF/classes/db/migration/V13__create_immutable_account_history_snapshots.sql")).isNotNull();
+            assertThat(jar.getJarEntry("BOOT-INF/classes/db/migration/V14__bind_transfer_risk_decisions.sql")).isNotNull();
             assertThat(jar.stream().map(entry -> entry.getName()).anyMatch(name -> name.contains("SecurityProbe"))).isFalse();
         }
     }

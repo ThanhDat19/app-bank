@@ -1,0 +1,30 @@
+syntax = "proto3";
+package banklab.risk.v1;
+option java_package = "vn.banklab.risk.v1";
+option java_multiple_files = true;
+
+// Pure decision service: no financial command, identity, DB access or side effect.
+service RiskEvaluator {
+  rpc AssessTransfer(AssessTransferRequest) returns (AssessTransferResponse);
+}
+message AssessTransferRequest {
+  string request_id = 1; // Opaque SHA-256 binding of identity/key/normalized command.
+  string amount = 2;     // Positive canonical integer VND, max20 digits. Never a float.
+  string currency = 3;
+}
+enum Outcome {
+  OUTCOME_UNSPECIFIED = 0;
+  APPROVE = 1;
+  REJECT = 2;
+}
+enum Reason {
+  REASON_UNSPECIFIED = 0;
+  AMOUNT_WITHIN_LIMIT = 1;
+  AMOUNT_LIMIT_EXCEEDED = 2;
+}
+message AssessTransferResponse {
+  string request_id = 1;
+  Outcome outcome = 2;
+  string policy_version = 3;
+  Reason reason = 4;
+}

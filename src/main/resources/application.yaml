@@ -17,6 +17,12 @@ spring:
       mode: never
 
 bank:
+  risk:
+    enabled: ${RISK_ENABLED:false}
+    host: ${RISK_HOST:127.0.0.1}
+    port: ${RISK_PORT:9091}
+    deadline-millis: ${RISK_DEADLINE_MILLIS:750}
+    approval-millis: ${RISK_APPROVAL_MILLIS:5000}
   sse:
     poll-millis: ${SSE_POLL_MILLIS:2000}
     lifetime-millis: ${SSE_LIFETIME_MILLIS:120000}

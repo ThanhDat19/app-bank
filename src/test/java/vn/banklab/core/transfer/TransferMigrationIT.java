@@ -33,7 +33,7 @@ class TransferMigrationIT {
             c.commit();
         }
         var flyway = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(8);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(9);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = connection(); var sql = c.createStatement(); var r = sql.executeQuery("SELECT amount,banking.ledger_balance('" + sourceLedger + "'),(SELECT count(*) FROM banking.transfers) FROM banking.cash_ins WHERE id='" + cashReceipt + "'")) {
             assertThat(r.next()).isTrue();
@@ -75,7 +75,8 @@ class TransferMigrationIT {
                 assertSql(() -> sql.execute("UPDATE banking.transfers SET " + change + " WHERE id='" + receipt + "'"));
             }
             assertSql(() -> sql.execute("DELETE FROM banking.transfers WHERE id='" + receipt + "'"));
-            assertSql(() -> sql.execute("TRUNCATE banking.transfers"));
+            // Reach append-only triggers past the new V14 dependent FK preflight.
+            assertSql(() -> sql.execute("TRUNCATE banking.transfers CASCADE"));
             try (var r = sql.executeQuery("SELECT banking.ledger_balance('" + sourceLedger + "'),banking.ledger_balance('" + destinationLedger + "'),(SELECT count(*) FROM banking.ledger_journals),(SELECT count(*) FROM banking.transfers)")) {
                 assertThat(r.next()).isTrue();
                 assertThat(r.getBigDecimal(1)).isEqualByComparingTo("0");
@@ -105,6 +106,8 @@ class TransferMigrationIT {
                 SELECT '%s','sql-issuer','%s','%s','%s','%s','%s',%s,id,posted_at%s
                 FROM banking.ledger_journals WHERE id='%s'
                 """.formatted(id, actor, id, "a".repeat(64), source, destination, amount, wrongTime ? "+interval '1 second'" : "", journal));
+        // Supply V14 policy completeness so the original V6 mismatch checks remain independently exercised.
+        sql.execute("INSERT INTO banking.transfer_risk_decisions(transfer_id,request_hash,request_id,outcome,policy_version,reason,assessed_at) VALUES ('"+id+"','"+"a".repeat(64)+"','"+"b".repeat(64)+"','BYPASSED','disabled-v1','RISK_DISABLED',clock_timestamp())");
     }
     private static void assertSql(org.assertj.core.api.ThrowableAssert.ThrowingCallable action) { assertThatThrownBy(action).isInstanceOfSatisfying(SQLException.class, e -> assertThat(e.getSQLState()).isEqualTo("23514")); }
 }
