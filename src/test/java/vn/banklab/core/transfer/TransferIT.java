@@ -70,6 +70,11 @@ class TransferIT {
         assertThat(receipt.path("currency").asString()).isEqualTo("VND");
         var path = r.headers().firstValue("Location").orElseThrow();
         assertThat(tree(call("GET", path, a.token(), null, null))).isEqualTo(receipt);
+        var riskReceipt=call("GET",path+"/risk-decision",a.token(),null,null);
+        assertThat(riskReceipt.statusCode()).isEqualTo(200);
+        assertThat(tree(riskReceipt).path("outcome").asString()).isEqualTo("BYPASSED");
+        assertThat(tree(riskReceipt).path("reason").asString()).isEqualTo("RISK_DISABLED");
+        assertThat(tree(riskReceipt).path("expiresAt").isNull()).isTrue();
         problem(call("GET", path, b.token(), null, null), 404, "TRANSFER_NOT_FOUND");
         problem(call("GET", path, token(key(), "OPERATOR"), null, null), 403, "ACCESS_DENIED");
         problem(call("GET", ROUTE + "/" + UUID.randomUUID(), a.token(), null, null), 404, "TRANSFER_NOT_FOUND");

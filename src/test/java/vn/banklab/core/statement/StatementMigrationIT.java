@@ -22,7 +22,7 @@ class StatementMigrationIT {
             s.execute("UPDATE banking.ledger_journals SET status='POSTED',posted_at=clock_timestamp() WHERE id='"+journal+"'");c.commit();
             try(var r=s.executeQuery("SELECT payload::text FROM banking.outbox_events WHERE aggregate_id='"+journal+"'")){assertThat(r.next()).isTrue();payload=r.getString(1);}
         }
-        var flyway=Flyway.configure().dataSource(POSTGRES.getJdbcUrl(),POSTGRES.getUsername(),POSTGRES.getPassword()).load();assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);assertThat(flyway.migrate().migrationsExecuted).isZero();
+        var flyway=Flyway.configure().dataSource(POSTGRES.getJdbcUrl(),POSTGRES.getUsername(),POSTGRES.getPassword()).load();assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);assertThat(flyway.migrate().migrationsExecuted).isZero();
         try(var c=connection();var s=c.createStatement();var r=s.executeQuery("SELECT (SELECT count(*) FROM banking.account_history_snapshots),(SELECT count(*) FROM banking.account_history_entries),(SELECT count(*) FROM banking.audit_events),(SELECT payload::text FROM banking.outbox_events),banking.ledger_balance('00000000-0000-0000-0000-000000000001')")){
             assertThat(r.next()).isTrue();assertThat(r.getLong(1)).isZero();assertThat(r.getLong(2)).isZero();assertThat(r.getLong(3)).isEqualTo(1);assertThat(r.getString(4)).isEqualTo(payload);assertThat(r.getBigDecimal(5)).isEqualByComparingTo("1");
         }

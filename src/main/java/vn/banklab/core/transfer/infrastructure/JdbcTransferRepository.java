@@ -10,6 +10,10 @@ import org.springframework.stereotype.Repository;
 import vn.banklab.core.iam.application.Actor;
 import vn.banklab.core.transfer.application.TransferReceipt;
 import vn.banklab.core.transfer.application.TransferRepository;
+import vn.banklab.core.transfer.application.TransferRiskDecision;
+import vn.banklab.core.risk.application.TransferRiskGate;
+import java.sql.Timestamp;
+import java.sql.Types;
 
 @Repository
 public class JdbcTransferRepository implements TransferRepository {
@@ -54,6 +58,30 @@ public class JdbcTransferRepository implements TransferRepository {
                 WHERE id=:id AND actor_issuer=:issuer AND actor_subject=:subject AND journal_id IS NOT NULL
                 """).param("id", id).param("issuer", actor.issuer()).param("subject", actor.subject())
                 .query((row, index) -> receipt(row)).optional();
+    }
+
+    public Optional<Claim> findByKey(Actor actor,String key) {
+        return jdbc.sql("SELECT * FROM banking.transfers WHERE actor_issuer=:issuer AND actor_subject=:subject AND idempotency_key=:key")
+                .param("issuer",actor.issuer()).param("subject",actor.subject()).param("key",key)
+                .query((r,n)->new Claim(r.getObject("id",UUID.class),r.getString("request_hash"),r.getObject("journal_id")==null?null:receipt(r))).optional();
+    }
+
+    public void recordRisk(UUID transferId,String hash,TransferRiskGate.Approval a) {
+        jdbc.sql("""
+                INSERT INTO banking.transfer_risk_decisions(transfer_id,request_hash,request_id,outcome,policy_version,reason,assessed_at,expires_at)
+                VALUES(:id,:hash,:request,:outcome,:policy,:reason,:assessed,:expires)
+                """).param("id",transferId).param("hash",hash).param("request",a.requestId()).param("outcome",a.outcome())
+                .param("policy",a.policyVersion()).param("reason",a.reason()).param("assessed",Timestamp.from(a.assessedAt()))
+                .param("expires",a.expiresAt()==null?null:Timestamp.from(a.expiresAt()),Types.TIMESTAMP).update();
+    }
+
+    public Optional<TransferRiskDecision> findRiskOwned(UUID id,Actor actor) {
+        return jdbc.sql("""
+                SELECT d.* FROM banking.transfer_risk_decisions d JOIN banking.transfers t ON t.id=d.transfer_id
+                WHERE t.id=:id AND t.actor_issuer=:issuer AND t.actor_subject=:subject
+                """).param("id",id).param("issuer",actor.issuer()).param("subject",actor.subject())
+                .query((r,n)->new TransferRiskDecision(id,r.getString("outcome"),r.getString("policy_version"),r.getString("reason"),
+                        r.getTimestamp("assessed_at").toInstant(),r.getTimestamp("expires_at")==null?null:r.getTimestamp("expires_at").toInstant())).optional();
     }
 
     private static TransferReceipt receipt(ResultSet row) throws SQLException {

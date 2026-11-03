@@ -83,8 +83,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
             case CONFLICT -> HttpStatus.CONFLICT;
             case RULE_VIOLATION -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case DEPENDENCY_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
         };
-        return response(request, HttpHeaders.EMPTY, status, exception.getCode(),
+        var headers = new HttpHeaders();
+        if (status == HttpStatus.SERVICE_UNAVAILABLE) headers.set(HttpHeaders.RETRY_AFTER,"1");
+        return response(request, headers, status, exception.getCode(),
                 "The operation cannot be completed for the current resource state.", List.of());
     }
 

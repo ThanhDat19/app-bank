@@ -19,7 +19,7 @@ class ReconciliationMigrationIT {
             s.execute("INSERT INTO banking.notification_failures(source_topic,source_partition,source_offset,payload_hash,attempts,available_at,error_code) VALUES('legacy-unknown',0,1,'"+"a".repeat(64)+"',1,now()-interval '2 days','PROCESSING_FAILED')");
         }
         var latest=Flyway.configure().dataSource(POSTGRES.getJdbcUrl(),POSTGRES.getUsername(),POSTGRES.getPassword()).load();
-        assertThat(latest.migrate().migrationsExecuted).isEqualTo(2);assertThat(latest.migrate().migrationsExecuted).isZero();
+        assertThat(latest.migrate().migrationsExecuted).isEqualTo(3);assertThat(latest.migrate().migrationsExecuted).isZero();
         try(var c=connection();var s=c.createStatement()) {
             try(var r=s.executeQuery("SELECT (SELECT count(*) FROM banking.reconciliation_journal_baseline),(SELECT count(*) FROM banking.reconciliation_journal_baseline WHERE legacy_eventless),(SELECT count(*) FROM banking.outbox_events),(SELECT count(*) FROM banking.audit_events),banking.ledger_balance('00000000-0000-0000-0000-000000000001')")) {
                 assertThat(r.next()).isTrue();assertThat(r.getLong(1)).isEqualTo(2);assertThat(r.getLong(2)).isEqualTo(1);assertThat(r.getLong(3)).isEqualTo(1);assertThat(r.getLong(4)).isZero();assertThat(r.getBigDecimal(5)).isEqualByComparingTo("2");

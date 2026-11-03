@@ -5,7 +5,7 @@ import java.util.Objects;
 /** Public codes are developer-defined constants, never customer input or exception messages. */
 public final class BusinessException extends RuntimeException {
 
-    public enum Kind { NOT_FOUND, CONFLICT, RULE_VIOLATION }
+    public enum Kind { NOT_FOUND, CONFLICT, RULE_VIOLATION, DEPENDENCY_UNAVAILABLE }
 
     private final String code;
     private final Kind kind;
