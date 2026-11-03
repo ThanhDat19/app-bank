@@ -32,6 +32,10 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 
 ## Tài liệu dự án
 
+- [BL-015: History/Statement snapshots](docs/architecture/ADR-008-history-statements.md)
+- [BL-015: API và CSV](docs/api/history-statements.md)
+- [BL-015: Local verification](docs/development/local-statements.md)
+
 - [BL-014: Snapshot reconciliation và audit](docs/architecture/ADR-007-reconciliation-audit.md)
 - [BL-014: API đối soát/audit](docs/api/reconciliation-audit.md)
 - [BL-014: Local run và điều tra sai lệch](docs/development/local-reconciliation.md)
