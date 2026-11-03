@@ -35,8 +35,10 @@ notification count. Changes coalesce. No per-event completeness, ordering or lat
    does not support this Authorization-header contract; this task adds no browser UI or auth workaround.
 2. On CONNECTED and STATE_CHANGED, coalesce refresh work and GET `/api/v1/accounts/{accountId}`,
    `/api/v1/ledger/accounts/{accountId}/balance` when provisioned, and `/api/v1/accounts/{accountId}/notifications`.
-   GET known `/api/v1/transfers/{id}` or `/api/v1/holds/{id}` for command-specific status under their existing
-   ownership rules. Notification lists remain bounded, eventual lists; SSE adds no full event-history guarantee.
+   GET known `/api/v1/transfers/{id}`, `/api/v1/holds/{id}` or `/api/v1/external-payments/{id}` for command-specific
+   status under their ownership rules. External reserve/release/settlement changes can invalidate the sample;
+   not every UNKNOWN problem/version change creates a hint. Keep periodic command queries. Notification lists
+   remain bounded, eventual lists; SSE adds no full event-history guarantee.
 3. If a command response was lost and no receipt ID is known, replay the **same request and original
    Idempotency-Key**. Never issue a new financial command/key based on a missing SSE hint.
 4. If an existing history/statement snapshot is shown, it remains immutable. A fresh read requires POSTing

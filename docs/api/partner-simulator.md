@@ -2,7 +2,7 @@
 
 Issue #37, first BL-018 dependency. This is a separate executable HTTP partner process, **not** a core payment API.
 It does not create accounts, reserve/debit money, invoke risk, or write financial receipts. Durable core states,
-UNKNOWN reservations and settlement/reconciliation are the next BL-018b increment, after owner review/merge.
+UNKNOWN reservations and settlement/reconciliation are implemented separately in [BL-018b](external-payments.md).
 
 ## Run
 
@@ -41,6 +41,10 @@ The simulator treats requestHash as an opaque immutable binding, not an authenti
 Within one process, same payment ID + exact normalized intent is idempotent; return its current observation.
 Changed intent409 IDEMPOTENCY_CONFLICT. Concurrent requests serialize operation creation. The original PUT response
 may be PENDING even if a later query is already terminal. No201/new-vs-replay distinction or event delivery guarantee.
+
+BL-018b adds optional `If-Partner-Instance: <UUID>` on PUT: a different epoch returns412 INSTANCE_MISMATCH **before**
+acceptance. The core always pins this header; old standalone demo clients may omit it. A matching header does not
+provide persistence after restart or authorize ambiguous automatic resubmission.
 
 `GET /payments/{id}` →200 latest authoritative observation for this **simulator process**; missing404
 PAYMENT_NOT_FOUND. State is PENDING→SUCCEEDED or FAILED, version1→2. Terminal state never changes; repeated

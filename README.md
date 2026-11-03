@@ -48,6 +48,9 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 - [BL-012: Cấu hình relay, kiểm tra và recovery](docs/development/local-outbox.md)
 
 - [Tình trạng dự án và tiến độ đã đối chiếu](docs/project/status.md)
+- [BL-018b: Core external payments, UNKNOWN và recovery](docs/api/external-payments.md)
+- [ADR-012: Reservation bền vững và settlement một lần](docs/architecture/ADR-012-external-workflow.md)
+- [BL-018b: Bằng chứng kiểm thử và phiếu review](docs/reviews/BL-018b.md)
 - [BL-018a: Partner simulator và hợp đồng lỗi/recovery](docs/api/partner-simulator.md)
 - [ADR-011: Tách simulator khỏi workflow tiền bền vững](docs/architecture/ADR-011-external-partner-foundation.md)
 - [BL-018a: Bằng chứng kiểm thử](docs/reviews/BL-018a.md)
