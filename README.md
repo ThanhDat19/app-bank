@@ -48,6 +48,10 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 - [BL-012: Cấu hình relay, kiểm tra và recovery](docs/development/local-outbox.md)
 
 - [Tình trạng dự án và tiến độ đã đối chiếu](docs/project/status.md)
+- [BL-017: Risk policy trước chuyển tiền và receipt](docs/api/transfer-risk.md)
+- [ADR-010: gRPC risk trước transaction tài chính](docs/architecture/ADR-010-risk-grpc.md)
+- [BL-017: Chạy simulator JAR và kiểm thử local](docs/development/local-risk.md)
+- [BL-017: Bằng chứng kiểm thử và phiếu review](docs/reviews/BL-017.md)
 - [BL-016: SSE, reconnect và đọc lại trạng thái REST](docs/api/account-events.md)
 - [ADR-009: Quyền truy cập và giới hạn SSE](docs/architecture/ADR-009-account-sse.md)
 - [BL-016: Thử streaming local](docs/development/local-sse.md)
