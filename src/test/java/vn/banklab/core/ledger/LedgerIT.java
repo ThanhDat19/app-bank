@@ -349,7 +349,8 @@ class LedgerIT {
         expectSqlGuard(() -> insertLine(id, CLEARING, "DEBIT", "1"));
         expectSqlGuard(() -> jdbc.sql("UPDATE banking.ledger_accounts SET currency=currency WHERE id=:id").param("id", owner.ledgerId()).update());
         expectSqlGuard(() -> jdbc.sql("UPDATE banking.accounts SET ledger_provisioned=FALSE WHERE id=:id").param("id", owner.accountId()).update());
-        expectSqlGuard(() -> jdbc.sql("TRUNCATE banking.ledger_postings").update());
+        // Include dependent snapshot rows so PostgreSQL reaches the append-only trigger rather than FK preflight.
+        expectSqlGuard(() -> jdbc.sql("TRUNCATE banking.ledger_postings CASCADE").update());
         assertThat(balance(owner)).isEqualByComparingTo("1");
     }
 
@@ -382,7 +383,7 @@ class LedgerIT {
     void migrationFromV3PreservesAccountAndSeedsOnlyChartMetadata() throws Exception {
         String url = upgradeDatabase("ledger_upgrade", false);
         var flyway = Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(9);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(10);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword()); var s = c.createStatement();
              var r = s.executeQuery("SELECT (SELECT count(*) FROM banking.accounts), (SELECT count(*) FROM banking.ledger_accounts), (SELECT count(*) FROM banking.ledger_journals)")) {
