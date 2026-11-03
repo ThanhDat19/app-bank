@@ -36,4 +36,12 @@ public class NotificationService {
         if(limit<1 || limit>100) throw new BusinessException("NOTIFICATION_LIMIT_INVALID",BusinessException.Kind.RULE_VIOLATION);
         return notifications.latest(accountId,limit);
     }
+
+    /** Counts committed rows regardless of occurredAt; late/backdated deliveries still invalidate. */
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @Transactional(readOnly=true)
+    public long changeCount(UUID accountId) {
+        accounts.owned(accountId);
+        return notifications.count(accountId);
+    }
 }

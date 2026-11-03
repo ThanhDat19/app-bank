@@ -17,6 +17,11 @@ spring:
       mode: never
 
 bank:
+  sse:
+    poll-millis: ${SSE_POLL_MILLIS:2000}
+    lifetime-millis: ${SSE_LIFETIME_MILLIS:120000}
+    max-connections: ${SSE_MAX_CONNECTIONS:32}
+    max-per-actor: ${SSE_MAX_PER_ACTOR:2}
   statements:
     max-entries: ${STATEMENT_MAX_ENTRIES:10000}
   reconciliation:

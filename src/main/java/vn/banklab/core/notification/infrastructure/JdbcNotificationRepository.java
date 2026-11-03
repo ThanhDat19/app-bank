@@ -36,6 +36,10 @@ public class JdbcNotificationRepository implements NotificationRepository {
                 .param("id",accountId).param("limit",limit).query((r,n)->new Notification(r.getObject("event_id",UUID.class),accountId,
                         r.getObject("journal_id",UUID.class),r.getString("kind"),r.getTimestamp("occurred_at").toInstant())).list();
     }
+    public long count(UUID accountId) {
+        return jdbc.sql("SELECT count(*) FROM banking.notifications WHERE account_id=:id")
+                .param("id",accountId).query(Long.class).single();
+    }
     @Transactional(propagation=Propagation.REQUIRES_NEW,readOnly=true)
     public Failure failure(SourceRecord s) {
         return jdbc.sql("SELECT attempts,available_at<=clock_timestamp() AS ready,quarantined FROM banking.notification_failures WHERE source_topic=:topic AND source_partition=:part AND source_offset=:offset")

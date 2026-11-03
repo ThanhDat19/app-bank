@@ -11,6 +11,7 @@ public interface NotificationRepository {
     void processed(SourceRecord source,UUID eventId);
     void insert(Notification notification);
     List<Notification> latest(UUID accountId,int limit);
+    long count(UUID accountId);
     Failure failure(SourceRecord source);
     Failure failed(SourceRecord source,String hash,String code);
     void quarantine(SourceRecord source,String hash,String code);
