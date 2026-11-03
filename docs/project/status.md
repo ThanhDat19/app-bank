@@ -5,7 +5,7 @@
 GitHub đã xác nhận [PR #21](https://github.com/ThanhDat19/app-bank/pull/21) (BL-008) và
 [PR #23](https://github.com/ThanhDat19/app-bank/pull/23) (BL-009/010) được owner merge ngày 02/11/2026.
 PR #24 (BL-011), #26 (BL-012) đã merge ngày 02/11/2026; #28 (BL-013) owner merge ngày 03/11/2026.
-PR #30 (BL-014) cũng đã owner merge. Main hiện ở `68576b1`; local main đồng bộ trước nhánh BL-015.
+PR #30 (BL-014), #32 (BL-015) cũng đã owner merge. Main hiện ở `f6f1c0e`; local main đồng bộ trước nhánh BL-016.
 Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
 
 | Phần | Tình trạng |
@@ -17,8 +17,9 @@ Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
 | BL-012 | Issue #25 / PR #26 đã merge; local 299 tests và GitHub CI PASS |
 | BL-013 | Issue #27 / PR #28 đã merge; local 313 tests và GitHub CI PASS |
 | BL-014 | Issue #29 / PR #30 đã merge; local 331 tests và GitHub CI PASS |
-| BL-015 | Issue #31, `feat/BL-015-history-statements` từ main 68576b1; immutable history/statements + CSV đã triển khai, local 343 tests PASS; chờ PR/CI và review |
-| BL-016 trở đi | SSE, risk, external payments/operations theo roadmap |
+| BL-015 | Issue #31 / PR #32 đã owner merge; immutable history/statements + CSV, local 343 tests và CI #60 PASS |
+| BL-016 | Issue #33, `feat/BL-016-sse-status` từ main f6f1c0e; authorized SSE/reconnect/REST resync, local 355 tests PASS; bàn giao qua Draft PR, CI/review live trên GitHub |
+| BL-017 trở đi | Risk, external payments/operations theo roadmap |
 
 Roadmap là thứ tự dependency, lịch sprint ban đầu chưa được re-estimate. Số lượng tác vụ có mã nguồn
 không đồng nghĩa chứng nhận vận hành. Cloud/Analytics addendum vẫn là draft, không thay roadmap chính.
@@ -114,3 +115,16 @@ có timezone/cutoff/interim rõ ràng, exact signed opening/running/closing tota
 Local clean verify **343/343 PASS** (83 unit/web/architecture + 260 integration), 0 failures/errors/skipped.
 [Review/evidence](../reviews/BL-015.md). Bàn giao code/tests + docs commits, push và Draft PR liên kết issue #31;
 trạng thái live CI/review nằm trên GitHub. Không financial writes hoặc bank_lab migration; BL-016 SSE là tác vụ kế tiếp riêng.
+
+## BL-016 — SSE và REST resync
+
+BL-015 đã owner merge PR #32, không có review comments còn tồn đọng. Issue #33 và feature branch riêng từ main cập nhật.
+Owned account SSE phát resync khi kết nối và khi sampled committed state thay đổi; reconnect luôn yêu cầu đọc lại REST,
+không dùng Last-Event-ID như durable cursor. Frame chỉ có accountId/reason, không amount/JWT/raw event.
+Context security/correlation được truyền và dọn rõ ràng; token expiry, lifetime, global/per-actor connection bounds,
+heartbeat và cleanup có kiểm thử. Không migration hoặc ghi nguồn tài chính; bank_lab local chưa thay đổi.
+[Contract](../api/account-events.md), [ADR](../architecture/ADR-009-account-sse.md), [review/evidence](../reviews/BL-016.md).
+Local full clean verify ngày 03/11/2026: **355/355 PASS** (86 unit/web/architecture + 269 integration),
+0 failures/errors/skipped, BUILD SUCCESS 6:28. Baseline 343 được giữ; thêm 3 unit + 9 SSE integration cases.
+Code/tests và docs được bàn giao bằng commits/push/Draft PR liên kết issue #33; CI/review live nằm trên GitHub.
+BL-017 risk gRPC là tác vụ tiếp theo riêng; owner giữ quyền merge/nghiệm thu.

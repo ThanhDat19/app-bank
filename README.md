@@ -48,6 +48,10 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 - [BL-012: Cấu hình relay, kiểm tra và recovery](docs/development/local-outbox.md)
 
 - [Tình trạng dự án và tiến độ đã đối chiếu](docs/project/status.md)
+- [BL-016: SSE, reconnect và đọc lại trạng thái REST](docs/api/account-events.md)
+- [ADR-009: Quyền truy cập và giới hạn SSE](docs/architecture/ADR-009-account-sse.md)
+- [BL-016: Thử streaming local](docs/development/local-sse.md)
+- [BL-016: Bằng chứng kiểm thử và phiếu review](docs/reviews/BL-016.md)
 - [BL-011a: Holds và số dư khả dụng](docs/api/holds.md)
 - [BL-011b: Hạn mức theo ngày và phí nguyên tử](docs/api/outgoing-policy.md)
 
