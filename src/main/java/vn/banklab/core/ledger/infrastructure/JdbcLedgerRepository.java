@@ -75,6 +75,21 @@ public class JdbcLedgerRepository implements LedgerRepository {
     }
 
     @Override
+    public vn.banklab.core.ledger.application.LedgerStreamAccess.Revision streamRevision(UUID accountId) {
+        return jdbc.sql("""
+                SELECT (SELECT count(*) FROM banking.ledger_postings p
+                        JOIN banking.ledger_accounts l ON l.id=p.ledger_account_id
+                        JOIN banking.ledger_journals j ON j.id=p.journal_id
+                        WHERE l.bank_account_id=:account AND j.status='POSTED') AS postings,
+                       count(*) AS holds, coalesce(sum(amount),0) AS reserved
+                FROM banking.holds WHERE account_id=:account AND state='ACTIVE'
+                  AND expires_at>statement_timestamp()
+                """).param("account", accountId).query((r, n) ->
+                new vn.banklab.core.ledger.application.LedgerStreamAccess.Revision(
+                        r.getLong("postings"), r.getLong("holds"), r.getBigDecimal("reserved"))).single();
+    }
+
+    @Override
     public boolean referenceExists(UUID id) {
         return jdbc.sql("SELECT EXISTS(SELECT 1 FROM banking.ledger_journals WHERE reference_id=:id)").param("id", id).query(Boolean.class).single();
     }

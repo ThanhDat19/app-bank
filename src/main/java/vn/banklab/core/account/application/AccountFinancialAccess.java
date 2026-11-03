@@ -18,6 +18,8 @@ public class AccountFinancialAccess {
     public record Reference(UUID id, String currency, boolean ledgerProvisioned) {
     }
 
+    public record ReadVersion(long version, boolean ledgerProvisioned) { }
+
     private final AccountRepository accounts;
     private final CustomerAccountAccess customers;
 
@@ -73,6 +75,15 @@ public class AccountFinancialAccess {
     public Reference owned(UUID id) {
         var customerId = customers.ownedCustomerId().orElseThrow(AccountFinancialAccess::notFound);
         return reference(accounts.findOwned(id, customerId, false).orElseThrow(AccountFinancialAccess::notFound));
+    }
+
+    /** Read-only invalidation token; lifecycle version changes even after freeze/unfreeze coalesces. */
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @Transactional(readOnly = true)
+    public ReadVersion readVersion(UUID id) {
+        var customerId = customers.ownedCustomerId().orElseThrow(AccountFinancialAccess::notFound);
+        var account = accounts.findOwned(id, customerId, false).orElseThrow(AccountFinancialAccess::notFound);
+        return new ReadVersion(account.version(), account.ledgerProvisioned());
     }
 
     @PreAuthorize("hasRole('CUSTOMER')")
