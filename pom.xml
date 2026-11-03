@@ -145,6 +145,14 @@
                             <mainClass>vn.banklab.risksimulator.RiskSimulatorMain</mainClass>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>partner-simulator</id>
+                        <goals><goal>repackage</goal></goals>
+                        <configuration>
+                            <classifier>partner-simulator</classifier>
+                            <mainClass>vn.banklab.partnersimulator.PartnerSimulatorMain</mainClass>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -155,6 +163,7 @@
                         <bank.packaged-jar>${project.build.directory}/${project.build.finalName}.jar</bank.packaged-jar>
                         <bank.source-directory>${project.build.sourceDirectory}</bank.source-directory>
                         <bank.risk-jar>${project.build.directory}/${project.build.finalName}-risk-simulator.jar</bank.risk-jar>
+                        <bank.partner-jar>${project.build.directory}/${project.build.finalName}-partner-simulator.jar</bank.partner-jar>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
