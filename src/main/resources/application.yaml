@@ -17,6 +17,8 @@ spring:
       mode: never
 
 bank:
+  statements:
+    max-entries: ${STATEMENT_MAX_ENTRIES:10000}
   reconciliation:
     enabled: ${RECONCILIATION_ENABLED:false}
     grace-seconds: ${RECONCILIATION_GRACE_SECONDS:300}
