@@ -37,7 +37,7 @@ class RiskMigrationIT {
                 }
             }
             assertThat(blocked).as("V14 explicitly waits for pre-cutover transfer writers").isTrue();assertThat(migration.isDone()).isFalse();
-            release.countDown();writer.get(5,TimeUnit.SECONDS);assertThat(migration.get(8,TimeUnit.SECONDS).migrationsExecuted).isEqualTo(1);
+            release.countDown();writer.get(5,TimeUnit.SECONDS);assertThat(migration.get(8,TimeUnit.SECONDS).migrationsExecuted).isEqualTo(2);
             try(var c=connection(url);var s=c.createStatement();var r=s.executeQuery("SELECT transfer_id,(SELECT count(*) FROM banking.transfer_risk_decisions) FROM banking.transfer_risk_legacy")){
                 assertThat(r.next()).isTrue();assertThat(r.getObject(1,UUID.class)).isEqualTo(id);assertThat(r.getLong(2)).isZero();
             }
@@ -53,7 +53,7 @@ class RiskMigrationIT {
         }
         long[] before=counts();
         var latest=Flyway.configure().dataSource(POSTGRES.getJdbcUrl(),POSTGRES.getUsername(),POSTGRES.getPassword()).load();
-        assertThat(latest.migrate().migrationsExecuted).isEqualTo(1);assertThat(latest.migrate().migrationsExecuted).isZero();
+        assertThat(latest.migrate().migrationsExecuted).isEqualTo(2);assertThat(latest.migrate().migrationsExecuted).isZero();
         assertThat(counts()).containsExactly(before);
         try(var c=connection();var s=c.createStatement()){
             try(var r=s.executeQuery("SELECT (SELECT count(*) FROM banking.transfer_risk_legacy),(SELECT count(*) FROM banking.transfer_risk_decisions),banking.ledger_balance('"+la+"'),banking.ledger_balance('"+lb+"')")){

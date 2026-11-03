@@ -10,6 +10,9 @@ import vn.banklab.core.ledger.application.OutgoingPolicyRepository;
 
 @Repository
 public class JdbcOutgoingPolicyRepository implements OutgoingPolicyRepository {
+    public java.time.LocalDate currentBusinessDate(String timezone){
+        return jdbc.sql("SELECT (clock_timestamp() AT TIME ZONE :zone)::date").param("zone",timezone).query(java.time.LocalDate.class).single();
+    }
     private final JdbcClient jdbc;
     public JdbcOutgoingPolicyRepository(JdbcClient jdbc) { this.jdbc = jdbc; }
 

@@ -11,6 +11,7 @@ public interface OutgoingPolicyRepository {
                   LocalDate businessDate, String timezone, UUID feeJournalId) { }
     Policy policy(UUID accountId);
     LocalDate businessDate(UUID journalId, String timezone);
+    LocalDate currentBusinessDate(String timezone);
     BigDecimal used(UUID accountId, LocalDate day);
     UUID feeIncomeAccount();
     void record(UUID accountId, UUID journalId, BigDecimal amount, Policy policy, LocalDate day, UUID feeJournalId);

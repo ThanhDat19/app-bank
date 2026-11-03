@@ -52,6 +52,7 @@ public class LedgerQueryService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public Closure assessClosure(UUID id, boolean marker) {
+        if(ledger.hasPendingExternal(id))return Closure.UNAVAILABLE;
         var linked = ledger.findForBank(id);
         if (marker != linked.isPresent()) {
             return Closure.UNAVAILABLE;

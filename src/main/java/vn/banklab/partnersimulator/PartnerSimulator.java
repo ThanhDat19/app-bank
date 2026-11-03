@@ -60,6 +60,11 @@ public final class PartnerSimulator implements AutoCloseable {
             } else if(path.startsWith("/payments/")) {
                 UUID id=id(path.substring("/payments/".length()));
                 if(method.equals("PUT")) {
+                    var expected=exchange.getRequestHeaders().get("If-Partner-Instance");
+                    if(expected!=null){
+                        if(expected.size()!=1)throw reject(400,"INVALID_INSTANCE");
+                        if(!id(expected.getFirst()).equals(instance))throw reject(412,"INSTANCE_MISMATCH");
+                    }
                     if(exchange.getRequestURI().getRawQuery()!=null)throw reject(400,"INVALID_QUERY");
                     var body=body(exchange);fields(body,Set.of("requestHash","amount","currency","beneficiary"));
                     var intent=new Intent(text(body,"requestHash"),text(body,"amount"),text(body,"currency"),text(body,"beneficiary"));

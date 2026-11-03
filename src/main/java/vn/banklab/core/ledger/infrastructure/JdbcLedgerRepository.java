@@ -19,6 +19,9 @@ import vn.banklab.core.ledger.domain.JournalPlan;
 
 @Repository
 public class JdbcLedgerRepository implements LedgerRepository {
+    public boolean hasPendingExternal(UUID accountId){
+        return jdbc.sql("SELECT banking.has_external_pending(:id)").param("id",accountId).query(Boolean.class).single();
+    }
     private static final RowMapper<LedgerAccount> MAPPER = (row, index) -> new LedgerAccount(
             row.getObject("id", UUID.class), row.getString("code"), row.getObject("bank_account_id", UUID.class),
             row.getString("currency"), row.getString("account_type"), row.getString("normal_side"));
@@ -64,8 +67,7 @@ public class JdbcLedgerRepository implements LedgerRepository {
                 SELECT (SELECT COALESCE(sum(CASE WHEN p.side=l.normal_side THEN p.amount ELSE -p.amount END),0)
                         FROM banking.ledger_postings p JOIN banking.ledger_accounts l ON l.id=p.ledger_account_id
                         JOIN banking.ledger_journals j ON j.id=p.journal_id WHERE l.id=:ledger AND j.status='POSTED') AS posted,
-                       (SELECT COALESCE(sum(amount),0) FROM banking.holds
-                        WHERE account_id=:account AND state='ACTIVE' AND expires_at>statement_timestamp()) AS reserved
+                       banking.reserved_balance_at(:account,statement_timestamp()) AS reserved
                 """)
                 .param("ledger", ledgerId).param("account", accountId).query((r, n) -> {
                     var posted = r.getBigDecimal("posted");
@@ -81,9 +83,8 @@ public class JdbcLedgerRepository implements LedgerRepository {
                         JOIN banking.ledger_accounts l ON l.id=p.ledger_account_id
                         JOIN banking.ledger_journals j ON j.id=p.journal_id
                         WHERE l.bank_account_id=:account AND j.status='POSTED') AS postings,
-                       count(*) AS holds, coalesce(sum(amount),0) AS reserved
-                FROM banking.holds WHERE account_id=:account AND state='ACTIVE'
-                  AND expires_at>statement_timestamp()
+                       banking.reservation_count_at(:account,statement_timestamp()) AS holds,
+                       banking.reserved_balance_at(:account,statement_timestamp()) AS reserved
                 """).param("account", accountId).query((r, n) ->
                 new vn.banklab.core.ledger.application.LedgerStreamAccess.Revision(
                         r.getLong("postings"), r.getLong("holds"), r.getBigDecimal("reserved"))).single();
