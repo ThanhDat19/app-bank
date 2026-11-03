@@ -17,6 +17,9 @@ spring:
       mode: never
 
 bank:
+  reconciliation:
+    enabled: ${RECONCILIATION_ENABLED:false}
+    grace-seconds: ${RECONCILIATION_GRACE_SECONDS:300}
   kafka:
     enabled: ${KAFKA_ENABLED:false}
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}

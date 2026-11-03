@@ -8,6 +8,7 @@ public interface NotificationRepository {
     record Notification(UUID eventId,UUID accountId,UUID journalId,String kind,Instant occurredAt) { }
     record Failure(int attempts,boolean ready,boolean quarantined) { }
     boolean claim(UUID eventId,String hash);
+    void processed(SourceRecord source,UUID eventId);
     void insert(Notification notification);
     List<Notification> latest(UUID accountId,int limit);
     Failure failure(SourceRecord source);
