@@ -18,7 +18,7 @@ public class OutboxRelayScheduling {
     private final long leaseMillis;
 
     public OutboxRelayScheduling(OutboxRelay relay,OutboxPublisher publisher,
-            @Value("${bank.outbox.relay.batch-size:20}") int batchSize,
+            @Value("${bank.outbox.relay.batch-size:1}") int batchSize,
             @Value("${bank.outbox.relay.lease-millis:30000}") long leaseMillis) {
         if(batchSize<1 || batchSize>100 || leaseMillis<1 || leaseMillis>300000) throw new IllegalArgumentException("Invalid outbox configuration");
         this.relay=relay; this.publisher=publisher; this.batchSize=batchSize; this.leaseMillis=leaseMillis;

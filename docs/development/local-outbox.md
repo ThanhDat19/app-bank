@@ -16,7 +16,7 @@ a logger/no-op is not accepted as a delivery implementation.
 
 | Property | Default | Bounds / contract |
 | --- | --- | --- |
-| bank.outbox.relay.batch-size | 20 | 1–100 events |
+| bank.outbox.relay.batch-size | 1 | 1–100 events; BL-013 uses a single bounded Kafka send per lease |
 | bank.outbox.relay.lease-millis | 30000 | 1–300000 ms |
 | bank.outbox.relay.poll-millis | 1000 | Spring fixed delay, positive milliseconds |
 

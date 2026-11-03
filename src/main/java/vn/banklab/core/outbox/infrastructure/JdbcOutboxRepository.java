@@ -2,6 +2,7 @@ package vn.banklab.core.outbox.infrastructure;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
@@ -14,6 +15,15 @@ import vn.banklab.core.outbox.application.OutboxRepository;
 public class JdbcOutboxRepository implements OutboxRepository {
     private final JdbcClient jdbc;
     public JdbcOutboxRepository(JdbcClient jdbc) { this.jdbc=jdbc; }
+
+    @Override
+    @Transactional(readOnly=true,propagation=Propagation.MANDATORY)
+    public Optional<OutboxEvent> find(UUID id) {
+        return jdbc.sql("SELECT * FROM banking.outbox_events WHERE event_id=:id").param("id",id)
+                .query((r,n)->new OutboxEvent(id,r.getObject("aggregate_id",UUID.class),r.getString("aggregate_type"),
+                        r.getLong("aggregate_version"),r.getString("event_type"),r.getInt("schema_version"),
+                        r.getTimestamp("occurred_at").toInstant(),r.getString("payload"))).optional();
+    }
 
     @Override
     public List<Claim> claim(int batchSize, long leaseMillis) {
