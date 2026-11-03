@@ -32,6 +32,10 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 
 ## Tài liệu dự án
 
+- [BL-014: Snapshot reconciliation và audit](docs/architecture/ADR-007-reconciliation-audit.md)
+- [BL-014: API đối soát/audit](docs/api/reconciliation-audit.md)
+- [BL-014: Local run và điều tra sai lệch](docs/development/local-reconciliation.md)
+
 - [BL-013: Kafka và notifications](docs/architecture/ADR-006-kafka-notifications.md)
 - [BL-013: API thông báo](docs/api/notifications.md)
 - [BL-013: Local Kafka và recovery](docs/development/local-messaging.md)

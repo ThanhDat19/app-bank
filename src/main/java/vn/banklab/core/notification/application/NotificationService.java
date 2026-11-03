@@ -22,10 +22,12 @@ public class NotificationService {
     @Transactional
     public void accept(SourceRecord source) {
         var verified=verifier.verify(source.key(),source.value()); var e=verified.event();
-        if(!notifications.claim(e.eventId(),verified.hash())) return;
-        var payload=tools.jackson.databind.json.JsonMapper.builder().build().readTree(e.payload());
-        for(UUID account:ledger.bankAccounts(e.aggregateId()))
-            notifications.insert(new NotificationRepository.Notification(e.eventId(),account,e.aggregateId(),payload.path("kind").asString(),e.occurredAt()));
+        if(notifications.claim(e.eventId(),verified.hash())) {
+            var payload=tools.jackson.databind.json.JsonMapper.builder().build().readTree(e.payload());
+            for(UUID account:ledger.bankAccounts(e.aggregateId()))
+                notifications.insert(new NotificationRepository.Notification(e.eventId(),account,e.aggregateId(),payload.path("kind").asString(),e.occurredAt()));
+        }
+        notifications.processed(source,e.eventId());
     }
     @PreAuthorize("hasRole('CUSTOMER')")
     @Transactional(readOnly=true)
