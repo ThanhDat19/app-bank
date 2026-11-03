@@ -1,11 +1,11 @@
-# Tình trạng dự án — 02/11/2026
+# Tình trạng dự án — 03/11/2026
 
 ## Đối chiếu tiến độ
 
 GitHub đã xác nhận [PR #21](https://github.com/ThanhDat19/app-bank/pull/21) (BL-008) và
 [PR #23](https://github.com/ThanhDat19/app-bank/pull/23) (BL-009/010) được owner merge ngày 02/11/2026.
-PR #24 (BL-011) và #26 (BL-012) cũng đã được owner merge ngày 02/11/2026. Main hiện ở `ae859cc`;
-local main đã đồng bộ trước khi tạo nhánh BL-013. Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
+PR #24 (BL-011), #26 (BL-012) đã merge ngày 02/11/2026; #28 (BL-013) owner merge ngày 03/11/2026.
+Main hiện ở `371aa0b`; local main đồng bộ trước khi tạo nhánh BL-014. Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
 
 | Phần | Tình trạng |
 | --- | --- |
@@ -14,8 +14,9 @@ local main đã đồng bộ trước khi tạo nhánh BL-013. Các ghi chú “
 | BL-007–010 | Idempotent cash-in/transfer, concurrency/recovery, full reversal đã merge |
 | BL-011 | Holds/available balance/limits/fees đã merge PR #24; local 286 tests và CI PASS |
 | BL-012 | Issue #25 / PR #26 đã merge; local 299 tests và GitHub CI PASS |
-| BL-013 | Issue #27, `feat/BL-013-kafka-notifications` từ main ae859cc; Kafka + durable in-app notifications đã triển khai, local 313 tests PASS; chờ PR/CI và owner review |
-| BL-014 trở đi | Reconciliation/history/external payments/operations theo roadmap |
+| BL-013 | Issue #27 / PR #28 đã merge; local 313 tests và GitHub CI PASS |
+| BL-014 | Issue #29, `feat/BL-014-reconciliation-audit` từ main 371aa0b; snapshot reports/audit và retry source receipts đã triển khai, local 331 tests PASS; chờ PR/CI và review |
+| BL-015 trở đi | History/statement, SSE, external payments/operations theo roadmap |
 
 Roadmap là thứ tự dependency, lịch sprint ban đầu chưa được re-estimate. Số lượng tác vụ có mã nguồn
 không đồng nghĩa chứng nhận vận hành. Cloud/Analytics addendum vẫn là draft, không thay roadmap chính.
@@ -92,3 +93,13 @@ Local full clean verify **313/313 PASS** (82 unit/web/architecture + 231 integra
 có Kafka/PostgreSQL thật, broker interruption/recovery, consumer restart, public transfer cho cả sender/recipient.
 [Review/evidence](../reviews/BL-013.md). Bàn giao gồm code/tests và docs commits, push và Draft PR liên kết issue #27;
 trạng thái live PR/CI được ghi trên GitHub. Không tự approve/merge hoặc migrate bank_lab local.
+
+## BL-014 — Reconciliation & Audit
+
+BL-013 đã merge PR #28. Issue #29 và feature branch riêng từ main cập nhật; không có review comments tồn đọng.
+REPEATABLE READ reports phân biệt structural mismatches và eventual-delivery warnings; không tự sửa nguồn.
+V12 audit actor/action/time cùng financial transaction và completed report; processed-source receipts tránh báo sai
+retry đã phục hồi. Legacy journal/retry inventories immutable, không tự suy diễn lịch sử thiếu bằng chứng.
+Local full clean verify **331/331 PASS** (83 unit/web/architecture + 248 integration), 0 failures/errors/skipped.
+[Review/evidence](../reviews/BL-014.md). Hai commits code/tests và docs được bàn giao qua push + Draft PR liên kết issue #29;
+trạng thái CI/review live nằm trên GitHub. Scheduler default off; bank_lab local chưa bị migrate hoặc repair.
