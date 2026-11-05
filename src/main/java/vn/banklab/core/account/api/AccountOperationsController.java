@@ -17,7 +17,7 @@ import vn.banklab.core.shared.web.ApiErrorResponses;
 
 @RestController
 @RequestMapping(value = "/api/v1/operations/accounts", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Account Operations", description = "OPERATOR lifecycle controls; cannot change own account state")
+@Tag(name = "Account Operations", description = "OPERATOR metadata; state changes require the maker-checker requests API")
 @ApiErrorResponses
 public class AccountOperationsController {
     private final AccountService accounts;
@@ -35,21 +35,20 @@ public class AccountOperationsController {
     }
 
     @PostMapping(value = "/{id}/freeze", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "freezeAccount", summary = "Freeze an ACTIVE account",
-            description = "OPERATOR other than owner. Reason CUSTOMER_REQUEST or SECURITY_REVIEW. Future debits and credits must both reject FROZEN.")
-    @ApiResponse(responseCode = "200", description = "FROZEN; version incremented")
+    @Operation(operationId = "freezeAccount", summary = "Legacy direct freeze is disabled", deprecated = true,
+            description = "Returns OPERATION_APPROVAL_REQUIRED. Create FREEZE at /api/v1/operations/requests, then a different operator approves.")
     @ApiResponse(responseCode = "404", description = "ACCOUNT_NOT_FOUND")
-    @ApiResponse(responseCode = "409", description = "ACCOUNT_VERSION_CONFLICT or ACCOUNT_STATE_INVALID")
+    @ApiResponse(responseCode = "409", description = "OPERATION_APPROVAL_REQUIRED")
     @ApiResponse(responseCode = "422", description = "ACCOUNT_REASON_INVALID or ACCOUNT_SELF_OPERATION_FORBIDDEN")
     public ResponseEntity<AccountResponse> freeze(@PathVariable UUID id, @Valid @RequestBody AccountStateRequest request) {
         return mutate(id, request, AccountAction.FREEZE);
     }
 
     @PostMapping(value = "/{id}/unfreeze", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "unfreezeAccount", summary = "Unfreeze a FROZEN account", description = "OPERATOR other than owner; REVIEW_CLEARED reason required.")
-    @ApiResponse(responseCode = "200", description = "ACTIVE; version incremented")
+    @Operation(operationId = "unfreezeAccount", summary = "Legacy direct unfreeze is disabled", deprecated = true,
+            description = "Returns OPERATION_APPROVAL_REQUIRED. Use UNFREEZE maker-checker request with REVIEW_CLEARED.")
     @ApiResponse(responseCode = "404", description = "ACCOUNT_NOT_FOUND")
-    @ApiResponse(responseCode = "409", description = "ACCOUNT_VERSION_CONFLICT or ACCOUNT_STATE_INVALID")
+    @ApiResponse(responseCode = "409", description = "OPERATION_APPROVAL_REQUIRED")
     @ApiResponse(responseCode = "422", description = "ACCOUNT_REASON_INVALID or ACCOUNT_SELF_OPERATION_FORBIDDEN")
     public ResponseEntity<AccountResponse> unfreeze(@PathVariable UUID id, @Valid @RequestBody AccountStateRequest request) {
         return mutate(id, request, AccountAction.UNFREEZE);

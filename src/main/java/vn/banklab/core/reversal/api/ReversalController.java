@@ -26,11 +26,10 @@ public class ReversalController {
     public ReversalController(ReversalService reversals) { this.reversals = reversals; }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "createFullReversal", summary = "Fully reverse a public posted cash-in or transfer once",
-            description = "No amount/sides from caller. Original remains immutable. Same actor/key/payload replays 201; changed payload conflicts. A different key/operator cannot reverse the original twice. Requires ACTIVE provisioned accounts and sufficient balances; no overdraft or state override.")
-    @ApiResponse(responseCode = "201", description = "POSTED inverse receipt with Location; same status/body on replay")
+    @Operation(operationId = "createFullReversal", summary = "Legacy direct reversal is disabled", deprecated = true,
+            description = "Returns OPERATION_APPROVAL_REQUIRED. Create REVERSAL at /api/v1/operations/requests, then a different operator approves atomically. Existing GET receipts remain readable by their checker/legacy creator.")
     @ApiResponse(responseCode = "404", description = "REVERSAL_ORIGINAL_NOT_FOUND")
-    @ApiResponse(responseCode = "409", description = "IDEMPOTENCY_CONFLICT, REVERSAL_ALREADY_EXISTS or ACCOUNT_STATE_INVALID")
+    @ApiResponse(responseCode = "409", description = "OPERATION_APPROVAL_REQUIRED")
     @ApiResponse(responseCode = "422", description = "REVERSAL_NOT_SUPPORTED, LEDGER_INSUFFICIENT_FUNDS, LEDGER_BALANCE_LIMIT or inconsistent linkage")
     public ResponseEntity<ReversalReceipt> create(
             @RequestHeader("Idempotency-Key") @Pattern(regexp = "[A-Za-z0-9._:-]{1,128}")

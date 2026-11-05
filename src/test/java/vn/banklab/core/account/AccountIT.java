@@ -227,7 +227,7 @@ class AccountIT {
     void invalidReasonAndPayloadDoNotChangeState() throws Exception {
         var owner = opened();
         String operator = operator();
-        problem(command(owner.accountId(), "freeze", operator, 0, "REVIEW_CLEARED", true), 422, "ACCOUNT_REASON_INVALID");
+        problem(command(owner.accountId(), "freeze", operator, 0, "REVIEW_CLEARED", true), 422, "OPERATION_REQUEST_INVALID");
         var bad = call("POST", "/api/v1/operations/accounts/" + owner.accountId() + "/freeze", operator, "{\"expectedVersion\":-1,\"reason\":\"SECURITY_REVIEW\"}");
         assertThat(bad.statusCode()).isEqualTo(400);
         assertStored(owner.accountId(), "ACTIVE", 0);
@@ -251,7 +251,7 @@ class AccountIT {
             s.execute("INSERT INTO banking.customers (id,identity_issuer,identity_subject,display_name,created_at,updated_at) VALUES ('" + UUID.randomUUID() + "','issuer','preserved','Preserved Demo',now(),now())");
         }
         var flyway = Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(13);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(14);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword()); var s = c.createStatement(); var r = s.executeQuery("SELECT display_name FROM banking.customers WHERE identity_subject='preserved'")) {
             assertThat(r.next()).isTrue();
@@ -309,7 +309,7 @@ class AccountIT {
         var b = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).timeout(Duration.ofSeconds(25)).header("X-Correlation-ID", "account-005");
         if (token != null) b.header("Authorization", "Bearer " + token);
         if (body != null) b.header("Content-Type", "application/json");
-        return http.send(b.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+        return vn.banklab.core.support.ApprovedOperations.send(http, b.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), TOKENS);
     }
 
     private JsonNode tree(HttpResponse<String> r) {

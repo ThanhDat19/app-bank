@@ -15,7 +15,7 @@ public class AuditController {
     private final ReconciliationService service;
     public AuditController(ReconciliationService service) {this.service=service;}
     @GetMapping
-    @Operation(summary="Browse actor/action/time audit records",description="OPERATOR only, no-store. New journals and completed reconciliation runs from V12 only; no historical identity inference. Limit 1–200/default 100; nextCursor is beforeId for older IDs. Concurrent commits may arrive out of ID order: this is browsing, not a reliable incremental export or tamper-proof audit stream.")
+    @Operation(summary="Browse actor/action/time audit records",description="OPERATOR only, no-store. Journals/reconciliation from V12 and operation request/decision history from V16; no historical identity inference. Limit 1–200/default 100; nextCursor is beforeId for older IDs. Concurrent commits may arrive out of ID order: this is browsing, not a reliable incremental export or tamper-proof audit stream.")
     public ResponseEntity<ReconciliationService.Page<ReconciliationRepository.Audit>> list(
             @RequestParam(defaultValue="9223372036854775807") long beforeId,@RequestParam(defaultValue="100") int limit) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.audit(beforeId,limit));

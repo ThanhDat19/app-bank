@@ -218,9 +218,10 @@ class ReversalIT {
         problem(reverse(original, "invalid", key), 401, "UNAUTHENTICATED");
         problem(reverse(original, a.token(), key), 403, "ACCESS_DENIED");
         var op = token(key(), "OPERATOR");
-        problem(reverse(UUID.randomUUID(), op, key), 404, "REVERSAL_ORIGINAL_NOT_FOUND");
-        problem(reverse(rawCredit(a, "ADJUSTMENT"), op, key), 422, "REVERSAL_NOT_SUPPORTED");
-        problem(reverse(rawCredit(a, "SIMULATED_CASH_IN"), op, key), 422, "REVERSAL_NOT_SUPPORTED");
+        // Failed approvals retain their immutable operation intent; a new target needs a new key.
+        problem(reverse(UUID.randomUUID(), op, key()), 404, "REVERSAL_ORIGINAL_NOT_FOUND");
+        problem(reverse(rawCredit(a, "ADJUSTMENT"), op, key()), 422, "REVERSAL_NOT_SUPPORTED");
+        problem(reverse(rawCredit(a, "SIMULATED_CASH_IN"), op, key()), 422, "REVERSAL_NOT_SUPPORTED");
         var inverse = reverse(original, op, key);
         assertThat(inverse.statusCode()).isEqualTo(201);
         problem(reverse(journal(inverse), op, key()), 422, "REVERSAL_NOT_SUPPORTED");
@@ -258,7 +259,7 @@ class ReversalIT {
         var a = owner(); var original = journal(fund(a, "100"));
         var subject = key(); var op = token(subject, "OPERATOR"); var key = key();
         if (fault.equals("journal")) jdbc.sql("ALTER TABLE banking.ledger_journals ADD CONSTRAINT test_reversal_finalize CHECK (actor_subject <> '" + subject + "' OR kind <> 'REVERSAL' OR status <> 'POSTED')").update();
-        if (fault.equals("receipt")) jdbc.sql("ALTER TABLE banking.reversals ADD CONSTRAINT test_reversal_receipt CHECK (idempotency_key <> '" + key + "' OR journal_id IS NULL)").update();
+        if (fault.equals("receipt")) jdbc.sql("ALTER TABLE banking.reversals ADD CONSTRAINT test_reversal_receipt CHECK (actor_subject <> '" + subject + "' OR journal_id IS NULL)").update();
         if (fault.equals("commit")) {
             jdbc.sql("CREATE FUNCTION banking.test_reversal_commit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Injected commit failure' USING ERRCODE='23514'; END $$").update();
             jdbc.sql("CREATE CONSTRAINT TRIGGER test_reversal_commit AFTER INSERT ON banking.reversals DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION banking.test_reversal_commit()").update();
@@ -367,7 +368,7 @@ class ReversalIT {
     private BigDecimal balance(Owner a) { return jdbc.sql("SELECT banking.ledger_balance(id) FROM banking.ledger_accounts WHERE bank_account_id=:id").param("id", a.id()).query(BigDecimal.class).single(); }
     private void balances(Owner a, String expectedA, Owner b, String expectedB) { assertThat(balance(a)).isEqualByComparingTo(expectedA); assertThat(balance(b)).isEqualByComparingTo(expectedB); }
     private long completed(UUID original) { return jdbc.sql("SELECT count(*) FROM banking.reversals WHERE original_journal_id=:id AND journal_id IS NOT NULL").param("id", original).query(Long.class).single(); }
-    private long claimCount(String key) { return jdbc.sql("SELECT count(*) FROM banking.reversals WHERE idempotency_key=:key").param("key", key).query(Long.class).single(); }
+    private long claimCount(String key) { return jdbc.sql("SELECT count(*) FROM banking.reversals v JOIN banking.operation_requests r ON r.id=v.operation_request_id WHERE r.idempotency_key=:key").param("key", key).query(Long.class).single(); }
     private String lines(UUID journal) { return jdbc.sql("SELECT string_agg(ledger_account_id::text || ':' || side || ':' || amount::text,',' ORDER BY id) FROM banking.ledger_postings WHERE journal_id=:id").param("id", journal).query(String.class).single(); }
     private void assertInverse(UUID original, UUID inverse) {
         assertThat(jdbc.sql("SELECT count(*) FROM banking.ledger_postings o JOIN banking.ledger_postings r ON r.ledger_account_id=o.ledger_account_id AND r.amount=o.amount AND r.currency=o.currency AND r.side<>o.side WHERE o.journal_id=:original AND r.journal_id=:inverse")
@@ -393,7 +394,7 @@ class ReversalIT {
         var builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).timeout(Duration.ofSeconds(path.startsWith("/v3/api-docs") ? 60 : 40)).header("X-Correlation-ID", "reversal-010");
         if (token != null) builder.header("Authorization", "Bearer " + token); if (key != null) builder.header("Idempotency-Key", key);
         if (body != null) builder.header("Content-Type", "application/json");
-        return http.send(builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+        return vn.banklab.core.support.ApprovedOperations.send(http,builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(),TOKENS);
     }
     private void problem(HttpResponse<String> r, int status, String code) { assertThat(r.statusCode()).as(r.body()).isEqualTo(status); assertThat(tree(r).path("code").asString()).isEqualTo(code); assertThat(tree(r).path("correlationId").asString()).isEqualTo("reversal-010"); }
     private static <T> List<T> concurrent(int count, Callable<T> action) throws Exception {
