@@ -17,6 +17,11 @@ spring:
       mode: never
 
 bank:
+  external:
+    enabled: ${EXTERNAL_ENABLED:false}
+    port: ${EXTERNAL_PARTNER_PORT:9092}
+    timeout-millis: ${EXTERNAL_TIMEOUT_MILLIS:1000}
+    settlement-account: ${EXTERNAL_SETTLEMENT_ACCOUNT:00000000-0000-0000-0000-000000000000}
   risk:
     enabled: ${RISK_ENABLED:false}
     host: ${RISK_HOST:127.0.0.1}

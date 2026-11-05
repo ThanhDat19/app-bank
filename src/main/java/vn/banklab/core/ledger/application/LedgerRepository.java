@@ -30,6 +30,7 @@ public interface LedgerRepository {
     LedgerQueryService.Balance balanceSnapshot(UUID accountId, UUID ledgerId, String currency);
 
     LedgerStreamAccess.Revision streamRevision(UUID accountId);
+    boolean hasPendingExternal(UUID accountId);
 
     boolean referenceExists(UUID referenceId);
 
