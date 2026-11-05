@@ -1,11 +1,12 @@
-# Tình trạng dự án — 03/11/2026
+# Tình trạng dự án — 05/11/2026
 
 ## Đối chiếu tiến độ
 
 GitHub đã xác nhận [PR #21](https://github.com/ThanhDat19/app-bank/pull/21) (BL-008) và
 [PR #23](https://github.com/ThanhDat19/app-bank/pull/23) (BL-009/010) được owner merge ngày 02/11/2026.
 PR #24 (BL-011), #26 (BL-012) đã merge ngày 02/11/2026; #28 (BL-013) owner merge ngày 03/11/2026.
-PR #30 (BL-014), #32 (BL-015), #34 (BL-016), #36 (BL-017), #38 (BL-018a) cũng đã owner merge. Main hiện ở `796fb5f`; local main đồng bộ trước nhánh BL-018b.
+PR #30 (BL-014), #32 (BL-015), #34 (BL-016), #36 (BL-017), #38 (BL-018a) cũng đã owner merge.
+PR #40 (BL-018b) owner merge ngày05/11/2026. Main hiện ở `7084137`; local main đã fast-forward trước nhánh BL-019.
 Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
 
 | Phần | Tình trạng |
@@ -21,8 +22,9 @@ Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
 | BL-016 | Issue #33 / PR #34 đã owner merge; SSE/reconnect/REST resync, local 355 tests và CI #63 PASS |
 | BL-017 | Issue #35 / PR #36 đã owner merge; risk gRPC/atomic policy receipt, local369 tests và CI #66 PASS |
 | BL-018a | Issue #37 / PR #38 đã owner merge; partner simulator, local377 tests và CI #69 PASS |
-| BL-018b | Issue #39, nhánh từ main796fb5f; durable commands/UNKNOWN/reservation/query reconciliation/once-only settlement, local399 tests PASS; bàn giao Draft PR/CI, chờ owner review/merge |
-| BL-019 trở đi | Operations maker-checker và các phần sau theo roadmap |
+| BL-018b | Issue #39 / PR #40 đã owner merge; durable UNKNOWN/reservation và once-only settlement; local399 và CI #72 PASS |
+| BL-019 | Issue #41, nhánh từ main7084137; bắt buộc maker-checker freeze/unfreeze/reversal, V16/audit; local421/421 PASS, bàn giao Draft PR/CI chờ owner review/merge |
+| BL-020 trở đi | Monitoring/performance và các phần sau theo roadmap |
 
 Roadmap là thứ tự dependency, lịch sprint ban đầu chưa được re-estimate. Số lượng tác vụ có mã nguồn
 không đồng nghĩa chứng nhận vận hành. Cloud/Analytics addendum vẫn là draft, không thay roadmap chính.
