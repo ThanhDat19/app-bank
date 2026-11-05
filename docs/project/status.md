@@ -6,7 +6,8 @@ GitHub đã xác nhận [PR #21](https://github.com/ThanhDat19/app-bank/pull/21)
 [PR #23](https://github.com/ThanhDat19/app-bank/pull/23) (BL-009/010) được owner merge ngày 02/11/2026.
 PR #24 (BL-011), #26 (BL-012) đã merge ngày 02/11/2026; #28 (BL-013) owner merge ngày 03/11/2026.
 PR #30 (BL-014), #32 (BL-015), #34 (BL-016), #36 (BL-017), #38 (BL-018a) cũng đã owner merge.
-PR #40 (BL-018b) owner merge ngày05/11/2026. Main hiện ở `7084137`; local main đã fast-forward trước nhánh BL-019.
+PR #40 (BL-018b) và #42 (BL-019) owner merge ngày05/11/2026.
+Main hiện ở `1548bce`; local main đã fast-forward trước nhánh BL-020.
 Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
 
 | Phần | Tình trạng |
@@ -23,8 +24,9 @@ Các ghi chú “chưa push/PR/merge” bên dưới là snapshot lịch sử.
 | BL-017 | Issue #35 / PR #36 đã owner merge; risk gRPC/atomic policy receipt, local369 tests và CI #66 PASS |
 | BL-018a | Issue #37 / PR #38 đã owner merge; partner simulator, local377 tests và CI #69 PASS |
 | BL-018b | Issue #39 / PR #40 đã owner merge; durable UNKNOWN/reservation và once-only settlement; local399 và CI #72 PASS |
-| BL-019 | Issue #41, nhánh từ main7084137; bắt buộc maker-checker freeze/unfreeze/reversal, V16/audit; local421/421 PASS, bàn giao Draft PR/CI chờ owner review/merge |
-| BL-020 trở đi | Monitoring/performance và các phần sau theo roadmap |
+| BL-019 | Issue #41 / PR #42 đã owner merge; bắt buộc maker-checker freeze/unfreeze/reversal, V16/audit; local421/421 và CI #75 PASS |
+| BL-020 | Issue #43, nhánh từ main1548bce; protected metrics/local traces/read-only snapshots; đo1650 requests không lỗi, local441/441 PASS; bàn giao Draft PR/CI chờ owner review/workload-SLO/merge |
+| BL-021 trở đi | Recovery drill và các phần sau theo roadmap; workload/SLO monitoring chờ owner chốt từ baseline |
 
 Roadmap là thứ tự dependency, lịch sprint ban đầu chưa được re-estimate. Số lượng tác vụ có mã nguồn
 không đồng nghĩa chứng nhận vận hành. Cloud/Analytics addendum vẫn là draft, không thay roadmap chính.
