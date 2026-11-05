@@ -17,6 +17,13 @@ spring:
       mode: never
 
 bank:
+  monitoring:
+    trace-capacity: ${MONITORING_TRACE_CAPACITY:200}
+    trace-sampling: ${MONITORING_TRACE_SAMPLING:0.1}
+    scheduled: ${MONITORING_SCHEDULED:false}
+    poll-millis: ${MONITORING_POLL_MILLIS:15000}
+    snapshot-max-age-millis: ${MONITORING_SNAPSHOT_MAX_AGE_MILLIS:60000}
+    statement-timeout-millis: ${MONITORING_STATEMENT_TIMEOUT_MILLIS:500}
   external:
     enabled: ${EXTERNAL_ENABLED:false}
     port: ${EXTERNAL_PARTNER_PORT:9092}
@@ -61,7 +68,12 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,prometheus
+  tracing:
+    enabled: false
+  observations:
+    enable:
+      http.server.requests: false
   endpoint:
     health:
       show-details: never
@@ -76,4 +88,4 @@ springdoc:
 
 logging:
   pattern:
-    level: "%5p [correlationId=%X{correlationId:-}]"
+    level: "%5p [correlationId=%X{correlationId:-} traceId=%X{traceId:-}]"

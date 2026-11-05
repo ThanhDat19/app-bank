@@ -40,6 +40,7 @@ public class SecurityConfiguration {
                     } else {
                         authorize.requestMatchers(docs).hasRole("OPERATOR");
                     }
+                    authorize.requestMatchers(HttpMethod.GET, "/actuator/prometheus").hasRole("OPERATOR");
                     authorize.requestMatchers("/api/v1/operations/**").hasRole("OPERATOR")
                             .requestMatchers("/api/v1/**").hasAnyRole("CUSTOMER", "OPERATOR")
                             .anyRequest().denyAll();
