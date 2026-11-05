@@ -1,0 +1,137 @@
+{
+  "schemaVersion" : 1,
+  "profile" : "full-local-v1",
+  "measuredAt" : "2026-11-05T03:48:13.276506700Z",
+  "codeRevision" : "32da49d761c6ca0ebb498317cc3b863f29f2bc0e",
+  "javaVersion" : "21.0.1",
+  "springBootVersion" : "4.1.2",
+  "postgresVersion" : "16.14",
+  "operatingSystem" : "Windows 11",
+  "architecture" : "amd64",
+  "availableProcessors" : 8,
+  "maxHeapBytes" : 4259315712,
+  "transport" : "loopback HTTP/1.1, one reused HttpClient, synthetic JWT/JWKS, disposable PostgreSQL16.14",
+  "loadModel" : "closed loop, bounded worker concurrency, disjoint read/write stages; all writes contend on one funded account pair",
+  "latencyDefinition" : "client send to fully consumed body; includes transport errors/timeouts, excludes request construction; exact empirical nearest rank",
+  "throughputDefinition" : "all measured attempts / barrier release to all workers completed; not offered load or successful-payment capacity",
+  "sampling" : 0.1,
+  "risk" : "disabled/bypassed",
+  "fee" : "0 VND",
+  "brokerRelay" : "disabled",
+  "timingAssertions" : false,
+  "warmupIncluded" : false,
+  "scenarios" : [ {
+    "name" : "balance-read",
+    "concurrency" : 1,
+    "warmup" : 50,
+    "successful" : 400,
+    "httpErrors" : 0,
+    "timeouts" : 0,
+    "transportErrors" : 0,
+    "invalidBodies" : 0,
+    "distribution" : {
+      "requests" : 400,
+      "elapsedSeconds" : 6.1087407,
+      "requestsPerSecond" : 65.4799441724544,
+      "p50Millis" : 13.458,
+      "p95Millis" : 22.5292,
+      "p99Millis" : 27.718,
+      "maxMillis" : 43.7726
+    }
+  }, {
+    "name" : "contended-transfer-create",
+    "concurrency" : 1,
+    "warmup" : 20,
+    "successful" : 150,
+    "httpErrors" : 0,
+    "timeouts" : 0,
+    "transportErrors" : 0,
+    "invalidBodies" : 0,
+    "distribution" : {
+      "requests" : 150,
+      "elapsedSeconds" : 10.6942046,
+      "requestsPerSecond" : 14.026288593730476,
+      "p50Millis" : 65.9977,
+      "p95Millis" : 104.5853,
+      "p99Millis" : 124.3353,
+      "maxMillis" : 125.357
+    }
+  }, {
+    "name" : "balance-read",
+    "concurrency" : 4,
+    "warmup" : 50,
+    "successful" : 400,
+    "httpErrors" : 0,
+    "timeouts" : 0,
+    "transportErrors" : 0,
+    "invalidBodies" : 0,
+    "distribution" : {
+      "requests" : 400,
+      "elapsedSeconds" : 2.320542,
+      "requestsPerSecond" : 172.37352308210754,
+      "p50Millis" : 21.0803,
+      "p95Millis" : 35.1622,
+      "p99Millis" : 49.9266,
+      "maxMillis" : 80.0516
+    }
+  }, {
+    "name" : "contended-transfer-create",
+    "concurrency" : 4,
+    "warmup" : 20,
+    "successful" : 150,
+    "httpErrors" : 0,
+    "timeouts" : 0,
+    "transportErrors" : 0,
+    "invalidBodies" : 0,
+    "distribution" : {
+      "requests" : 150,
+      "elapsedSeconds" : 10.2544345,
+      "requestsPerSecond" : 14.627817847975917,
+      "p50Millis" : 258.3888,
+      "p95Millis" : 360.0597,
+      "p99Millis" : 392.6373,
+      "maxMillis" : 401.516
+    }
+  }, {
+    "name" : "balance-read",
+    "concurrency" : 16,
+    "warmup" : 50,
+    "successful" : 400,
+    "httpErrors" : 0,
+    "timeouts" : 0,
+    "transportErrors" : 0,
+    "invalidBodies" : 0,
+    "distribution" : {
+      "requests" : 400,
+      "elapsedSeconds" : 1.6808459,
+      "requestsPerSecond" : 237.97541464092575,
+      "p50Millis" : 60.1578,
+      "p95Millis" : 100.8031,
+      "p99Millis" : 128.1616,
+      "maxMillis" : 176.5826
+    }
+  }, {
+    "name" : "contended-transfer-create",
+    "concurrency" : 16,
+    "warmup" : 20,
+    "successful" : 150,
+    "httpErrors" : 0,
+    "timeouts" : 0,
+    "transportErrors" : 0,
+    "invalidBodies" : 0,
+    "distribution" : {
+      "requests" : 150,
+      "elapsedSeconds" : 7.8098861,
+      "requestsPerSecond" : 19.206426070669583,
+      "p50Millis" : 783.0606,
+      "p95Millis" : 1110.0098,
+      "p99Millis" : 1132.7012,
+      "maxMillis" : 1138.7044
+    }
+  } ],
+  "financialClosure" : {
+    "uniqueTransfers" : 510,
+    "sourcePostedBalance" : "999490",
+    "destinationPostedBalance" : "510"
+  }
+}

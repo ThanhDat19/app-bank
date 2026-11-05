@@ -27,6 +27,7 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 | http://localhost:8080/v3/api-docs.yaml | OpenAPI YAML |
 | http://localhost:8080/api/v1/system/info | `core-banking-service`, `SIMULATION` |
 | http://localhost:8080/actuator/health | Trạng thái ứng dụng và kết nối DB |
+| http://localhost:8080/actuator/prometheus | Metrics đã giới hạn dữ liệu; cần OPERATOR JWT |
 | http://localhost:8080/api/v1/iam/me | Danh tính đã xác minh; cần CUSTOMER hoặc OPERATOR access token |
 | http://localhost:8180/admin/ | Keycloak local; tạo user và gán client role để thử đăng nhập |
 
@@ -48,6 +49,10 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 - [BL-012: Cấu hình relay, kiểm tra và recovery](docs/development/local-outbox.md)
 
 - [Tình trạng dự án và tiến độ đã đối chiếu](docs/project/status.md)
+- [BL-020: Metrics, safe local traces và operational snapshots](docs/api/monitoring.md)
+- [ADR-014: Telemetry privacy và performance baseline](docs/architecture/ADR-014-observability.md)
+- [BL-020: Chạy monitoring và benchmark cô lập](docs/development/local-monitoring.md)
+- [BL-020: Bằng chứng đo/kiểm thử và phiếu review](docs/reviews/BL-020.md)
 - [BL-019: Maker-checker bắt buộc cho freeze/unfreeze và reversal](docs/api/maker-checker.md)
 - [BL-019: Thử bằng hai operator](docs/development/local-maker-checker.md)
 - [ADR-013: Approval và execution nguyên tử](docs/architecture/ADR-013-maker-checker.md)
