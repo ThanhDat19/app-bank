@@ -299,6 +299,12 @@ class TransferIT {
         try (var blocker = DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
              var sql = blocker.createStatement(); var pool = Executors.newSingleThreadExecutor()) {
             blocker.setAutoCommit(false);
+            UUID operation = UUID.randomUUID();
+            if (changed.equals("state")) {
+                // Trusted SQL fixture establishes a V16 two-person claim before taking the account lock.
+                sql.execute("INSERT INTO banking.operation_requests(id,maker_issuer,maker_subject,idempotency_key,request_hash,type,target_id,expected_account_version,reason) VALUES('"+operation+"','sql-maker','maker','"+operation+"','"+"a".repeat(64)+"','FREEZE','"+a.id()+"',0,'SECURITY_REVIEW')");
+                sql.execute("UPDATE banking.operation_requests SET status='EXECUTING',checker_issuer='sql-fixture',checker_subject='sql-fixture',execution_txid=pg_current_xact_id()::text WHERE id='"+operation+"'");
+            }
             var heldAccount = changed.equals("provision") ? b.id() : a.id();
             sql.execute("SELECT id FROM banking.accounts WHERE id='" + heldAccount + "' FOR UPDATE");
             var pending = pool.submit(() -> transfer(a, b, key, "80"));
@@ -324,9 +330,10 @@ class TransferIT {
                     sql.execute("INSERT INTO banking.ledger_accounts (id,code,name,account_type,normal_side,currency,bank_account_id,created_at) VALUES ('" + ledger + "','TEST_" + ledger + "','Synthetic provision race','LIABILITY','CREDIT','VND','" + b.id() + "',now())");
                     sql.execute("UPDATE banking.accounts SET ledger_provisioned=true WHERE id='" + b.id() + "'");
                 } else {
-                    // Trusted state fixture with matching history; the HTTP JWT gates are tested separately.
+                    // Complete the two-person SQL fixture atomically while the transfer waits.
                     sql.execute("UPDATE banking.accounts SET status='FROZEN',version=1,updated_at=clock_timestamp() WHERE id='" + a.id() + "'");
-                    sql.execute("INSERT INTO banking.account_state_changes (id,account_id,from_status,to_status,reason,actor_issuer,actor_subject,account_version,changed_at) VALUES ('" + UUID.randomUUID() + "','" + a.id() + "','ACTIVE','FROZEN','SECURITY_REVIEW','sql-fixture','sql-fixture',1,clock_timestamp())");
+                    sql.execute("INSERT INTO banking.account_state_changes (id,account_id,from_status,to_status,reason,actor_issuer,actor_subject,account_version,changed_at) SELECT '" + UUID.randomUUID() + "',id,'ACTIVE','FROZEN','SECURITY_REVIEW','sql-fixture','sql-fixture',version,updated_at FROM banking.accounts WHERE id='"+a.id()+"'");
+                    sql.execute("UPDATE banking.operation_requests SET status='APPROVED',version=1,decision_reason='APPROVED',completed_at=clock_timestamp(),result=(SELECT jsonb_build_object('id',id,'accountNumber',account_number,'currency',currency,'status',status,'version',version,'createdAt',created_at,'updatedAt',updated_at) FROM banking.accounts WHERE id='"+a.id()+"') WHERE id='"+operation+"'");
                 }
                 blocker.commit();
             } finally { blocker.rollback(); }
@@ -409,7 +416,7 @@ class TransferIT {
         if (token != null) builder.header("Authorization", "Bearer " + token);
         if (key != null) builder.header("Idempotency-Key", key);
         if (body != null) builder.header("Content-Type", "application/json");
-        return http.send(builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+        return vn.banklab.core.support.ApprovedOperations.send(http,builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(),TOKENS);
     }
     private void problem(HttpResponse<String> r, int status, String code) {
         assertThat(r.statusCode()).as(r.body()).isEqualTo(status);

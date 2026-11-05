@@ -22,13 +22,16 @@ public class AccountService {
     private final CustomerAccountAccess customers;
     private final CurrentActorProvider actors;
     private final AccountClosureGuard closure;
+    private final vn.banklab.core.shared.application.OperationApprovalGuard approvals;
 
     public AccountService(AccountRepository accounts, CustomerAccountAccess customers,
-                          CurrentActorProvider actors, AccountClosureGuard closure) {
+                          CurrentActorProvider actors, AccountClosureGuard closure,
+                          vn.banklab.core.shared.application.OperationApprovalGuard approvals) {
         this.accounts = accounts;
         this.customers = customers;
         this.actors = actors;
         this.closure = closure;
+        this.approvals = approvals;
     }
 
     @Transactional
@@ -74,6 +77,7 @@ public class AccountService {
     @Transactional
     @PreAuthorize("hasRole('OPERATOR')")
     public Account operate(UUID id, long version, AccountAction action, AccountReason reason) {
+        approvals.require(action.name(), id, version, reason == null ? null : reason.name());
         if (action == AccountAction.CLOSE) {
             throw new BusinessException("ACCOUNT_OPERATION_INVALID", RULE_VIOLATION);
         }

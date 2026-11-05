@@ -19,7 +19,9 @@ Các policy dưới đây là phạm vi triển khai để owner review trước
 | CIN-10 | Receipt/key không sửa/xóa/truncate, không TTL trong MVP. Business/DB/commit error rollback key và toàn bộ tiền. |
 
 Đây là nghiệp vụ mô phỏng OPERATOR trực tiếp nạp vào customer account. Không có maker-checker, xác nhận tiền
-thực từ đối tác, limits theo ngày, reversal, transfer, holds hoặc available balance. Maker-checker theo BL-019.
+thực từ đối tác, limits theo ngày, reversal, transfer, holds hoặc available balance trong phạm vi cash-in này.
+BL-019 hiện áp dụng maker-checker cho freeze/unfreeze và reversal; cash-in tiếp tục là OPERATOR trực tiếp,
+không nằm trong các thao tác đã được bảo vệ bởi approval workflow.
 Đổi key hoặc operator identity là command mới, có thể cộng thêm tiền; idempotency không dedupe ý định giữa các actor.
 
 ## REST và ví dụ

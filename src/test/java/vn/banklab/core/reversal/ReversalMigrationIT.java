@@ -9,7 +9,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import static org.assertj.core.api.Assertions.*;
 
-/** Independent SQL evidence: upgrade real posted receipts, then bypass all Java validations. */
+/** Independent SQL evidence: upgrade real posted receipts, then test financial constraints under a V16 SQL execution claim. */
 @Testcontainers
 class ReversalMigrationIT {
     @Container static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16.14-alpine");
@@ -31,7 +31,7 @@ class ReversalMigrationIT {
             c.commit();
         }
         var flyway = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(9);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(10);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = connection(); var s = c.createStatement(); var r = s.executeQuery("SELECT banking.ledger_balance('" + la + "'),banking.ledger_balance('" + lb + "'),(SELECT count(*) FROM banking.reversals),(SELECT amount FROM banking.transfers WHERE id='" + transferReceipt + "')")) {
             assertThat(r.next()).isTrue(); assertThat(r.getBigDecimal(1)).isEqualByComparingTo("60");
@@ -109,11 +109,16 @@ class ReversalMigrationIT {
         s.execute("INSERT INTO banking.cash_ins (id,actor_issuer,actor_subject,idempotency_key,request_hash,account_id,amount,journal_id,posted_at) SELECT '" + id + "','sql-issuer','operator','" + id + "','" + "a".repeat(64) + "','" + bank + "'," + amount + ",id,posted_at FROM banking.ledger_journals WHERE id='" + journal + "'");
     }
     private static void receipt(Statement s, UUID id, UUID original, UUID inverse, String kind, String actor, String amount, boolean badTime) throws SQLException {
+        // V16 requires a distinct maker/checker claim even for trusted SQL test fixtures.
+        // Keep all inverse mismatch/uniqueness assertions active against the latest schema.
+        s.execute("INSERT INTO banking.operation_requests(id,maker_issuer,maker_subject,idempotency_key,request_hash,type,target_id,reason) VALUES('"+id+"','sql-maker','maker','"+id+"','"+"b".repeat(64)+"','REVERSAL','"+original+"','OPERATOR_ERROR')");
+        s.execute("UPDATE banking.operation_requests SET status='EXECUTING',checker_issuer='sql-issuer',checker_subject='"+actor+"',execution_txid=pg_current_xact_id()::text WHERE id='"+id+"'");
         s.execute("""
                 INSERT INTO banking.reversals (id,actor_issuer,actor_subject,idempotency_key,request_hash,original_journal_id,reason,journal_id,original_kind,amount,posted_at)
                 SELECT '%s','sql-issuer','%s','%s','%s','%s','OPERATOR_ERROR',id,'%s',%s,posted_at%s
                 FROM banking.ledger_journals WHERE id='%s'
                 """.formatted(id, actor, id, "a".repeat(64), original, kind, amount, badTime ? "+interval '1 second'" : "", inverse));
+        s.execute("UPDATE banking.operation_requests SET status='APPROVED',version=1,decision_reason='APPROVED',completed_at=clock_timestamp(),result=(SELECT jsonb_build_object('id',v.id,'originalJournalId',v.original_journal_id,'journalId',v.journal_id,'originalKind',v.original_kind,'amount',v.amount::text,'currency','VND','reason',v.reason,'status','POSTED','postedAt',v.posted_at) FROM banking.reversals v WHERE v.id='"+id+"') WHERE id='"+id+"'");
     }
     private static void assertSql(org.assertj.core.api.ThrowableAssert.ThrowingCallable action, String state) { assertThatThrownBy(action).isInstanceOfSatisfying(SQLException.class, e -> assertThat(e.getSQLState()).isEqualTo(state)); }
 }

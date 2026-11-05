@@ -362,7 +362,7 @@ class CashInIT {
         if (token != null) b.header("Authorization", "Bearer " + token);
         if (key != null) b.header("Idempotency-Key", key);
         if (body != null) b.header("Content-Type", "application/json");
-        return http.send(b.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+        return vn.banklab.core.support.ApprovedOperations.send(http, b.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), TOKENS);
     }
     private void problem(HttpResponse<String> r, int status, String code) {
         assertThat(r.statusCode()).as(r.body()).isEqualTo(status);

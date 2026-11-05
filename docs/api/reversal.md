@@ -3,11 +3,15 @@
 Nối tiếp BL-008 tại `e3131d7`, dependency PR #21. User ngày29/10/2026 yêu cầu tiếp tục nghiệp vụ,
 giữ cấu trúc hiện tại. Owner merge dependency trước PR mới; AI không tự merge.
 
+**Cập nhật BL-019/V16:** Phải tạo REVERSAL intent và có OPERATOR khác approve qua
+[maker-checker](maker-checker.md). Legacy direct POST trả409 OPERATION_APPROVAL_REQUIRED.
+Financial rules dưới đây vẫn áp dụng khi approve; existing GET receipts giữ nguyên quyền truy cập.
+
 ## Rules và actors
 
 | Rule | Contract |
 | --- | --- |
-| REV-01 | Verified JWT, OPERATOR; CUSTOMER không tự hoàn tiền. Maker-checker ở BL-019. |
+| REV-01 | Verified JWT, OPERATOR maker + checker khác identity; CUSTOMER không tự hoàn tiền. |
 | REV-02 | Chỉ POSTED cash-in/internal transfer có public receipt tương ứng. |
 | REV-03 | Một original chỉ có một reversal hoàn tất, kể cả khác operator/key. |
 | REV-04 | Full inverse bằng journal mới: đúng accounts/currency/amount, đảo DEBIT↔CREDIT của cả hai lines. |
@@ -15,13 +19,13 @@ giữ cấu trúc hiện tại. Owner merge dependency trước PR mới; AI kh�
 | REV-06 | Accounts phải ACTIVE/provisioned; giữ no-negative/max-balance guards, không overdraft/state override. |
 | REV-07 | Reason OPERATOR_ERROR hoặc DUPLICATE_PROCESSING, lưu cùng verified actor/timestamp. |
 | REV-08 | Claim/hash/key, original serialization, inverse journal/postings/receipt cùng READ COMMITTED transaction. |
-| REV-09 | Same actor/key/payload replay 201; changed payload tr? 409; khác key cho original đã hoàn409. |
-| REV-10 | GET receipt chỉ verified operator identity đã tạo; khác operator/missing cùng404. |
-| REV-11 | Completed receipt/key append-only, giữ vô thời hạn; lỗi rollback cả key và tiền, không cache failure. |
+| REV-09 | Maker create intent replay201 state hiện tại; checker approve retry200 stored result; changed intent409. |
+| REV-10 | GET reversal receipt chỉ checker/legacy creator; maker đọc result qua operation request. |
+| REV-11 | Completed receipt/key append-only; failed approval rollback tiền và reversal claim, immutable PENDING intent vẫn giữ. |
 
 Không partial reversal, reversal-of-reversal hoặc ADJUSTMENT reversal. Request không nhận amount/postings/actor;
-unknown fields bị từ chối để tránh hiểu nhầm partial thành full. OPERATOR có thể hoàn original của customer/operator
-khác khi có journalId từ receipt, theo policy mô phỏng trực tiếp; chưa phải maker-checker/dispute workflow thật.
+unknown fields bị từ chối để tránh hiểu nhầm partial thành full. Hai OPERATOR có thể yêu cầu/duyệt original của
+customer/operator khác khi có journalId từ receipt. Chưa phải dispute workflow hay chính sách ngân hàng thật.
 
 Cash-in inverse: customer deposit DEBIT, cash clearing CREDIT. Transfer inverse: original source CREDIT,
 original destination DEBIT. Nếu recipient đã chi tiền hoặc original source đã được nạp tới max, reversal có thể
@@ -30,21 +34,26 @@ thiếu tiền/overflow; reject toàn bộ, không tự dùng tài khoản khác
 ## REST
 
 JWT/Problem Details/correlation/no-store theo conventions. Required Idempotency-Key:1–128 ASCII `[A-Za-z0-9._:-]`,
-case-sensitive, không chứa PII. Scope issuer+subject+reversal operation, riêng namespaces cash-in/transfer.
+case-sensitive, không chứa PII. Public key scope là maker issuer+subject+operations, riêng cash-in/transfer.
 
 | Method/path | Kết quả |
 | --- | --- |
-| POST `/api/v1/operations/reversals` | 201 POSTED receipt + Location; replay cùng201/body/Location |
-| GET `/api/v1/operations/reversals/{id}` | 200 original receipt của cùng operator identity |
+| POST `/api/v1/operations/requests` type REVERSAL |201 PENDING intent + Location; chưa ghi tiền |
+| POST `/api/v1/operations/requests/{id}/approve` |200 APPROVED + `result` receipt, checker khác maker |
+| POST `/api/v1/operations/reversals` |409 OPERATION_APPROVAL_REQUIRED; legacy disabled |
+| GET `/api/v1/operations/reversals/{id}` |200 receipt của checker/legacy creator |
 
 ```http
-POST /api/v1/operations/reversals
-Authorization: Bearer <operator access token>
+POST /api/v1/operations/requests
+Authorization: Bearer <maker operator access token>
 Idempotency-Key: demo-reversal-010-a
 Content-Type: application/json
 
-{"originalJournalId":"de5fa6c9-57e3-43f1-8903-9beb23f432ad","reason":"OPERATOR_ERROR"}
+{"type":"REVERSAL","targetId":"de5fa6c9-57e3-43f1-8903-9beb23f432ad","reason":"OPERATOR_ERROR"}
 ```
+
+Lưu operation `id`; checker khác maker POST `/{id}/approve` với `{"expectedVersion":0}`.
+`result` chứa receipt sau (không phải toàn bộ operation response):
 
 ```json
 {
@@ -60,9 +69,10 @@ Content-Type: application/json
 }
 ```
 
-Amount response là exact integer VND string tối đa20 digits, lấy từ original. SHA-256 UTF-8 hash input:
+Amount response là exact integer VND string tối đa20 digits, lấy từ original. Internal reversal SHA-256 input:
 `reversal:v1\n<canonical original UUID>\n<reason>`. JSON order/whitespace, UUID case, token renewal/correlation
-không đổi hash. Đổi actor/key là command khác nhưng vẫn không hoàn được original lần hai.
+không đổi hash. Internal key là operation UUID, actor là checker; public intent hash/key theo BL-019.
+Đổi operation không cho phép hoàn original lần hai.
 
 | HTTP/code | Điều kiện |
 | --- | --- |
@@ -81,15 +91,18 @@ không đổi hash. Đổi actor/key là command khác nhưng vẫn không hoàn
 | 500 INTERNAL_ERROR | Unexpected DB/commit failure; không lộ SQL/key/amount/identity |
 
 Internal validation còn có IDEMPOTENCY_KEY_INVALID/REVERSAL_REQUEST_INVALID (422). Auth/validation chạy trước
-replay; receipt committed replay được sau account close/freeze hoặc balance thay đổi. Original cash-in/transfer
-retry vẫn trả receipt gốc, không nạp/chuyển thêm sau reversal. Lỗi không cache, có thể sửa precondition rồi retry key cũ.
+replay. Approved operation result replay được sau account close/freeze/balance thay đổi bằng đúng checker/id.
+Original cash-in/transfer retry vẫn trả receipt gốc, không nạp/chuyển thêm sau reversal.
+Failed approval vẫn PENDING; phục hồi precondition rồi retry approve. Target/reason mới phải có intent/key mới.
 
 ## Transaction, database và recovery
 
 V7 chỉ thêm reversal data/guards, không sửa V1–V6 hoặc seed tiền. Original FK deferred cho phép application trả404.
-Flow: claim INSERT ON CONFLICT → lock claim → compare hash/replay → original FOR NO KEY UPDATE
+Tại V16 approval: lock operation → distinct checker → transaction execution claim →
+reversal claim INSERT ON CONFLICT → lock claim → compare hash/replay → original FOR NO KEY UPDATE
 → public receipt eligibility → already-reversed check → ordered bank/ledger locks → final money/state guards
-→ inverse POSTED journal → complete receipt → commit. Không network dưới locks, không batch commands.
+→ inverse POSTED journal → complete receipt → operation APPROVED/result/history/audit → commit.
+Không network dưới locks, không batch commands.
 
 Original lock serialize mọi key/operator cho cùng original. NO KEY UPDATE tương thích FK KEY SHARE;
 FOR UPDATE có thể deadlock competing claims. Original lock có trước bank/ledger; writers hiện tại không khóa

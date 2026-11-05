@@ -7,6 +7,9 @@ Policy trong PR cần owner review; chưa phải chính sách sản phẩm/ngân
 **Cập nhật BL-006:** Ledger/closure adapter đã được triển khai. Sau provision, account balance 0 có thể
 close; nonzero bị chặn. Phần dưới giữ mô tả baseline BL-005; xem [Ledger](ledger.md) cho behavior hiện tại.
 
+**Cập nhật BL-019/V16:** Freeze/unfreeze bắt buộc [maker-checker](maker-checker.md). Hai OPERATOR khác identity và khác owner;
+legacy direct POST bị chặn409 OPERATION_APPROVAL_REQUIRED. State/domain/financial rules bên dưới vẫn áp dụng tại approval.
+
 ## Business rules
 
 | ID | Quy tắc | Bảo vệ |
@@ -16,7 +19,7 @@ close; nonzero bị chặn. Phần dưới giữ mô tả baseline BL-005; xem [
 | ACC-03 | UUID là resource ID; số account 12 chữ số do sequence cấp | PK, unique/check số account; không nhận số account từ request |
 | ACC-04 | Owner được xác định qua issuer/subject và Customer application contract | Account module không đọc trực tiếp bảng hoặc domain nội bộ Customer |
 | ACC-05 | CUSTOMER chỉ đọc/đóng account mình; missing và ngoài ownership đều 404 | Query id + customerId; CUSTOMER gate ở application |
-| ACC-06 | OPERATOR xem/freeze/unfreeze; không đổi trạng thái account mình | URL + method security và kiểm tra identity owner qua Customer contract |
+| ACC-06 | OPERATOR xem; freeze/unfreeze qua maker/checker khác nhau và khác owner | Method security, Customer contract và V16 SQL guards |
 | ACC-07 | ACTIVE→FROZEN, FROZEN→ACTIVE, ACTIVE→CLOSED; CLOSED terminal | Pure domain + DB history CHECK |
 | ACC-08 | Gửi expectedVersion, mỗi thay đổi tăng một version | FOR UPDATE và conditional UPDATE WHERE id/version/status |
 | ACC-09 | OPEN và mọi state change có history cùng transaction | Account + history rollback cùng nhau khi lỗi |
@@ -27,8 +30,8 @@ close; nonzero bị chặn. Phần dưới giữ mô tả baseline BL-005; xem [
 | Action | Actor | Trước → sau | Reason cho phép |
 | --- | --- | --- | --- |
 | Open | CUSTOMER, KYC VERIFIED | Chưa có → ACTIVE/version 0 | Server ghi OPENED |
-| Freeze | OPERATOR khác owner | ACTIVE → FROZEN | CUSTOMER_REQUEST hoặc SECURITY_REVIEW |
-| Unfreeze | OPERATOR khác owner | FROZEN → ACTIVE | REVIEW_CLEARED |
+| Freeze | Maker + checker OPERATOR khác nhau và khác owner | ACTIVE → FROZEN | CUSTOMER_REQUEST hoặc SECURITY_REVIEW |
+| Unfreeze | Maker + checker OPERATOR khác nhau và khác owner | FROZEN → ACTIVE | REVIEW_CLEARED |
 | Close | CUSTOMER owner | ACTIVE → CLOSED | CUSTOMER_REQUEST, financial check CLEAR |
 
 FROZEN không được đóng để tránh khách hàng bỏ qua lệnh đóng băng của operations.
@@ -67,8 +70,9 @@ Bearer JWT như BL-003; responses no-store và X-Correlation-ID. Error dùng [Ap
 | GET `/api/v1/accounts/{id}` | CUSTOMER owner | 200 |
 | POST `/api/v1/accounts/{id}/close` | CUSTOMER owner | 200 CLOSED/version +1 |
 | GET `/api/v1/operations/accounts/{id}` | OPERATOR | 200 |
-| POST `/api/v1/operations/accounts/{id}/freeze` | OPERATOR khác owner | 200 FROZEN/version +1 |
-| POST `/api/v1/operations/accounts/{id}/unfreeze` | OPERATOR khác owner | 200 ACTIVE/version +1 |
+| POST `/api/v1/operations/accounts/{id}/freeze` | OPERATOR |409 OPERATION_APPROVAL_REQUIRED; legacy disabled |
+| POST `/api/v1/operations/accounts/{id}/unfreeze` | OPERATOR |409 OPERATION_APPROVAL_REQUIRED; legacy disabled |
+| POST `/api/v1/operations/requests` + `/{id}/approve` | Maker + checker |201 intent,200 atomic result; contract BL-019 |
 
 Open body:
 
@@ -94,16 +98,16 @@ Response ví dụ (sequence có thể có gaps khi conflict/rollback, không ph�
 }
 ```
 
-Freeze body:
+Freeze intent body (maker POST `/operations/requests`, sau đó checker approve operation version0):
 
 ```json
-{"expectedVersion":0,"reason":"SECURITY_REVIEW"}
+{"type":"FREEZE","targetId":"<account UUID>","expectedAccountVersion":0,"reason":"SECURITY_REVIEW"}
 ```
 
 Sau freeze version 1, unfreeze:
 
 ```json
-{"expectedVersion":1,"reason":"REVIEW_CLEARED"}
+{"type":"UNFREEZE","targetId":"<account UUID>","expectedAccountVersion":1,"reason":"REVIEW_CLEARED"}
 ```
 
 Sau unfreeze version 2, owner close:

@@ -48,6 +48,10 @@ Xem [hướng dẫn môi trường](docs/development/local-setup.md) nếu dùng
 - [BL-012: Cấu hình relay, kiểm tra và recovery](docs/development/local-outbox.md)
 
 - [Tình trạng dự án và tiến độ đã đối chiếu](docs/project/status.md)
+- [BL-019: Maker-checker bắt buộc cho freeze/unfreeze và reversal](docs/api/maker-checker.md)
+- [BL-019: Thử bằng hai operator](docs/development/local-maker-checker.md)
+- [ADR-013: Approval và execution nguyên tử](docs/architecture/ADR-013-maker-checker.md)
+- [BL-019: Bằng chứng kiểm thử và phiếu review](docs/reviews/BL-019.md)
 - [BL-018b: Core external payments, UNKNOWN và recovery](docs/api/external-payments.md)
 - [ADR-012: Reservation bền vững và settlement một lần](docs/architecture/ADR-012-external-workflow.md)
 - [BL-018b: Bằng chứng kiểm thử và phiếu review](docs/reviews/BL-018b.md)

@@ -32,7 +32,9 @@ partial RUNNING report. POST is not idempotent: after a lost response, retry may
 UUID/integer uses shared 400 contract. Missing report is checked before finding-page bounds.
 
 Audit entries contain id, actorIssuer, actorSubject, actorType, action, resourceType, resourceId, occurredAt.
-Central journal/report audit starts V12 and contains required identity metadata for operations; it is not public
+Central journal/report audit starts V12. V16 adds OPERATION_REQUESTED/APPROVED/REJECTED/CANCELLED,
+validated against immutable [maker-checker history](maker-checker.md), with no historical approval backfill.
+Audit contains required identity metadata for operations; it is not public
 customer data. No arbitrary create/delete audit API. Audit IDs can commit out of order: refresh browsing as needed,
 do not use beforeId/IDs as a reliable incremental export/checkpoint. Immutable per-run findings do not have this issue.
 

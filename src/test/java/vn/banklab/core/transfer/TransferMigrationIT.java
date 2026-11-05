@@ -33,7 +33,7 @@ class TransferMigrationIT {
             c.commit();
         }
         var flyway = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(10);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(11);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = connection(); var sql = c.createStatement(); var r = sql.executeQuery("SELECT amount,banking.ledger_balance('" + sourceLedger + "'),(SELECT count(*) FROM banking.transfers) FROM banking.cash_ins WHERE id='" + cashReceipt + "'")) {
             assertThat(r.next()).isTrue();

@@ -24,7 +24,7 @@ class NotificationMigrationIT {
             try(var r=s.executeQuery("SELECT payload::text FROM banking.outbox_events")) {assertThat(r.next()).isTrue();payload=r.getString(1);}
         }
         var flyway=Flyway.configure().dataSource(POSTGRES.getJdbcUrl(),POSTGRES.getUsername(),POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(5);assertThat(flyway.migrate().migrationsExecuted).isZero();
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(6);assertThat(flyway.migrate().migrationsExecuted).isZero();
         try(var c=connection();var s=c.createStatement();var r=s.executeQuery("SELECT e.payload::text,d.state,d.attempts,(SELECT count(*) FROM banking.notifications),(SELECT count(*) FROM banking.notification_inbox),banking.ledger_balance('00000000-0000-0000-0000-000000000001') FROM banking.outbox_events e JOIN banking.outbox_deliveries d USING(event_id)")) {
             assertThat(r.next()).isTrue();assertThat(r.getString(1)).isEqualTo(payload);assertThat(r.getString(2)).isEqualTo("LEASED");assertThat(r.getInt(3)).isEqualTo(1);
             assertThat(r.getLong(4)).isZero();assertThat(r.getLong(5)).isZero();assertThat(r.getBigDecimal(6)).isEqualByComparingTo("1");assertThat(r.next()).isFalse();

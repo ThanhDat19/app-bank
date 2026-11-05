@@ -383,7 +383,7 @@ class LedgerIT {
     void migrationFromV3PreservesAccountAndSeedsOnlyChartMetadata() throws Exception {
         String url = upgradeDatabase("ledger_upgrade", false);
         var flyway = Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(12);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(13);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var c = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword()); var s = c.createStatement();
              var r = s.executeQuery("SELECT (SELECT count(*) FROM banking.accounts), (SELECT count(*) FROM banking.ledger_accounts), (SELECT count(*) FROM banking.ledger_journals)")) {
@@ -714,9 +714,9 @@ class LedgerIT {
         var a=provisioned(); var b=provisioned(); credit(a,"100"); policy(a,"32","32","2","Asia/Ho_Chi_Minh");
         var original=transfer(a,b,"30",UUID.randomUUID().toString()); assertThat(original.statusCode()).isEqualTo(201);
         String body="{\"originalJournalId\":\""+tree(original).path("journalId").asString()+"\",\"reason\":\"OPERATOR_ERROR\"}";
-        var reversal=http.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/operations/reversals"))
+        var reversal=vn.banklab.core.support.ApprovedOperations.send(http,HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/operations/reversals"))
                 .header("Authorization","Bearer "+operator()).header("Idempotency-Key",UUID.randomUUID().toString()).header("Content-Type","application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
+                .POST(HttpRequest.BodyPublishers.ofString(body)).build(),TOKENS);
         assertThat(reversal.statusCode()).as(reversal.body()).isEqualTo(201);
         assertBalances(a,"98","0","98"); assertBalances(b,"0","0","0");
         problem(transfer(a,b,"1",UUID.randomUUID().toString()),422,"TRANSFER_DAILY_LIMIT");
@@ -921,7 +921,7 @@ class LedgerIT {
         var b = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).timeout(Duration.ofSeconds(30)).header("X-Correlation-ID", "ledger-006");
         if (token != null) b.header("Authorization", "Bearer " + token);
         if (body != null) b.header("Content-Type", "application/json");
-        return http.send(b.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+        return vn.banklab.core.support.ApprovedOperations.send(http, b.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), TOKENS);
     }
 
     private void problem(HttpResponse<String> r, int status, String code) {

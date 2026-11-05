@@ -3,7 +3,7 @@
 Từ BL-006, tài khoản đã provision Ledger và posted balance 0 cũng có thể đóng; xem [Ledger guide](local-ledger.md).
 Các bước bên dưới vẫn áp dụng cho account chưa provision; limitation closure adapter của BL-005 đã được thay.
 
-Cần hai user khác nhau trong realm `bank-lab`: CUSTOMER và OPERATOR của client `bank-api`.
+Cần CUSTOMER và hai OPERATOR khác identity trong realm `bank-lab`, client `bank-api`.
 Làm [Customer/KYC](local-customer-kyc.md) trước: CUSTOMER tạo profile, OPERATOR khác identity duyệt VERIFIED.
 
 Sau checkout `feat/BL-005-account-lifecycle` (hoặc main sau merge), chạy:
@@ -31,27 +31,30 @@ các path `{id}` dùng UUID này, không dùng accountNumber. X-Correlation-ID c
 GET `/accounts/me` trả array chứa account. Open lại nhận 409 ACCOUNT_ALREADY_EXISTS là đúng.
 Nếu 422 KYC_NOT_VERIFIED, hoàn thành KYC bằng operator; đăng nhập không đồng nghĩa đã KYC.
 
-## OPERATOR freeze/unfreeze
+## OPERATOR freeze/unfreeze qua maker-checker
 
-Dùng browser/cửa sổ riêng tư khác, Authorize OPERATOR khác owner. Trong **Account Operations**:
+Làm [hướng dẫn BL-019](local-maker-checker.md): OPERATOR A tạo yêu cầu trong **Maker-checker**,
+OPERATOR B duyệt. Cả hai khác customer owner của account. Legacy direct POST freeze/unfreeze trả409 OPERATION_APPROVAL_REQUIRED.
 
 1. GET `/operations/accounts/{id}`, đọc state/version.
-2. POST `/{id}/freeze`, body:
+2. A POST `/operations/requests`, Idempotency-Key mới, body:
 
 ```json
-{"expectedVersion":0,"reason":"SECURITY_REVIEW"}
+{"type":"FREEZE","targetId":"<account UUID>","expectedAccountVersion":0,"reason":"SECURITY_REVIEW"}
 ```
 
-Mong đợi 200 FROZEN/version 1. CUSTOMER GET account cũng thấy FROZEN.
+Nhận201 PENDING, lưu operation id. B POST `/operations/requests/{operationId}/approve` với `{"expectedVersion":0}`.
+Nhận200 APPROVED, result FROZEN/account version1. CUSTOMER GET account cũng thấy FROZEN.
 CUSTOMER thử close lúc này bị 409 ACCOUNT_STATE_INVALID.
 
-3. OPERATOR POST `/{id}/unfreeze`:
+3. A tạo request mới để UNFREEZE, rồi B approve operation version0:
 
 ```json
-{"expectedVersion":1,"reason":"REVIEW_CLEARED"}
+{"type":"UNFREEZE","targetId":"<account UUID>","expectedAccountVersion":1,"reason":"REVIEW_CLEARED"}
 ```
 
-Mong đợi 200 ACTIVE/version 2. Operator không được tự đổi state tài khoản của chính mình ngay cả khi có cả hai role.
+Mong đợi200 APPROVED với result ACTIVE/account version2. Version của operation khác version của account.
+Maker/checker không được đổi state account của chính mình ngay cả khi có cả hai role.
 
 ## CUSTOMER đóng tài khoản chưa liên kết sổ cái
 
@@ -81,7 +84,7 @@ ACCOUNT_CLOSURE_UNAVAILABLE thì hệ thống thiếu authoritative financial ch
 | OPERATOR-only gọi open/close | 403 |
 | Dual-role operator freeze account của mình | 422 ACCOUNT_SELF_OPERATION_FORBIDDEN |
 | Dùng expectedVersion cũ | 409 ACCOUNT_VERSION_CONFLICT |
-| Đổi reason giữa freeze/unfreeze | 422 ACCOUNT_REASON_INVALID |
+| Đổi reason giữa freeze/unfreeze trong create intent |422 OPERATION_REQUEST_INVALID |
 | Đóng FROZEN hoặc đổi state CLOSED | 409 ACCOUNT_STATE_INVALID |
 
 Chỉ đọc để kiểm chứng dữ liệu:

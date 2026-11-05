@@ -25,7 +25,7 @@ class ExternalMigrationIT {
         }
         String before=inventory();
         var latest=Flyway.configure().dataSource(POSTGRES.getJdbcUrl(),POSTGRES.getUsername(),POSTGRES.getPassword()).load();
-        assertThat(latest.migrate().migrationsExecuted).isEqualTo(1);assertThat(latest.migrate().migrationsExecuted).isZero();assertThat(inventory()).isEqualTo(before);
+        assertThat(latest.migrate().migrationsExecuted).isEqualTo(2);assertThat(latest.migrate().migrationsExecuted).isZero();assertThat(inventory()).isEqualTo(before);
         try(var c=connection();var s=c.createStatement();var r=s.executeQuery("SELECT banking.ledger_balance('"+la+"'),banking.reserved_balance('"+a+"'),banking.reserved_balance_at('"+a+"',statement_timestamp()),banking.reservation_count_at('"+a+"',statement_timestamp()),(SELECT count(*) FROM banking.external_payments),(SELECT count(*) FROM banking.external_payment_history)")){
             r.next();assertThat(r.getBigDecimal(1)).isEqualByComparingTo("90");assertThat(r.getBigDecimal(2)).isEqualByComparingTo("20");assertThat(r.getBigDecimal(3)).isEqualByComparingTo("20");assertThat(r.getLong(4)).isEqualTo(1);assertThat(r.getLong(5)).isZero();assertThat(r.getLong(6)).isZero();
         }

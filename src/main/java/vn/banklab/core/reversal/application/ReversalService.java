@@ -25,15 +25,19 @@ public class ReversalService {
     private final LedgerReversalAccess ledger;
     private final CashInService cashIns;
     private final TransferService transfers;
+    private final vn.banklab.core.shared.application.OperationApprovalGuard approvals;
 
     public ReversalService(ReversalRepository reversals, CurrentActorProvider actors, LedgerReversalAccess ledger,
-                           CashInService cashIns, TransferService transfers) {
+                           CashInService cashIns, TransferService transfers,
+                           vn.banklab.core.shared.application.OperationApprovalGuard approvals) {
         this.reversals = reversals; this.actors = actors; this.ledger = ledger;
         this.cashIns = cashIns; this.transfers = transfers;
+        this.approvals = approvals;
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ReversalReceipt create(String key, UUID originalId, String reason) {
+        approvals.require("REVERSAL", originalId, null, reason);
         if (key == null || !key.matches("[A-Za-z0-9._:-]{1,128}")) {
             throw new BusinessException("IDEMPOTENCY_KEY_INVALID", BusinessException.Kind.RULE_VIOLATION);
         }
